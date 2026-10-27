@@ -6,4 +6,8 @@
     <string name="transcribing">Yazıya çevriliyor</string>
     <string name="heard">Duydum:</string>
     <string name="error">Hata kodu %1$d</string>
+    <string name="thinking">Düşünüyorum</string>
+    <string name="searching">İnternette arıyorum</string>
+    <string name="no_key">Yapay zeka anahtarı yok. README\'deki adb komutuyla ekle.</string>
+    <string name="failed">Bir sorun oldu: %1$s</string>
 </resources>

@@ -1,9 +1,9 @@
 # tvask
 
 Ask your Android TV in your own words.
-tvask takes over the mic key on your remote and will send what you say to an AI model you choose.
+tvask takes over the mic key on your remote and sends what you say to an AI model you choose.
 
-Status: early. Today tvask shows what you said. The AI part comes next.
+Status: early. It answers questions, searches the web, opens apps and searches inside a few apps.
 
 ## How it works
 
@@ -11,9 +11,17 @@ Status: early. Today tvask shows what you said. The AI part comes next.
 2. Android opens tvask, because tvask is the default assistant.
 3. tvask asks Google's speech recognizer on the TV for the words.
    Only Google's remote service can read the remote's audio, so tvask does not record it itself.
-4. Planned: tvask sends the words to an AI model with a few tools.
-   The first tools are: open an app, search inside an app, and search the web.
-5. Planned: tvask shows the answer and reads it aloud.
+4. tvask sends the recognizer's top five guesses to an AI model with three tools:
+   open an app, search inside an app, and search the web.
+   The guesses help the model fix words the recognizer got wrong.
+5. tvask shows the answer and reads it aloud, or it opens the app and closes itself.
+
+Search inside an app works for YouTube, YouTube Music, Netflix and Prime Video.
+Other apps only open.
+
+The default AI model is DeepSeek (`deepseek-flash`).
+Web search uses the Brave Search API.
+You need an API key for each.
 
 ## Requirements
 
@@ -45,7 +53,48 @@ If you try another TV, please open an issue and tell us how it went.
    ```
    adb shell appops set io.github.urtuba.tvask APP_AUTO_START allow
    ```
-4. Press the mic key and say something.
+4. Send your API keys to the TV:
+   ```
+   adb shell am broadcast -n io.github.urtuba.tvask/.ConfigReceiver \
+       -a io.github.urtuba.tvask.SET --es name chat_key --es value <deepseek-key>
+   adb shell am broadcast -n io.github.urtuba.tvask/.ConfigReceiver \
+       -a io.github.urtuba.tvask.SET --es name brave_key --es value <brave-key>
+   ```
+5. Press the mic key and say something.
+
+## Settings
+
+Set a value with the `SET` command from step 4.
+An empty value goes back to the default.
+
+| Name | Default | Meaning |
+|---|---|---|
+| `chat_key` | none | API key of the AI provider |
+| `brave_key` | none | Brave Search API key |
+| `chat_url` | `https://api.deepseek.com` | Base URL of an OpenAI compatible API |
+| `chat_model` | `deepseek-flash` | Model name |
+| `chat_effort` | `low` | Sent as `reasoning_effort`. Low keeps answers fast. |
+
+Check what is set. Keys show only their length:
+
+```
+adb shell am broadcast -n io.github.urtuba.tvask/.ConfigReceiver -a io.github.urtuba.tvask.SHOW
+```
+
+The keys live in the app's private storage on the TV.
+Only adb can set them, because the receiver needs the `DUMP` permission.
+They never go into the APK.
+A key on the command line ends up in your shell history.
+On macOS you can read it from the Keychain instead, for example `"$(security find-generic-password -s deepseek-api -w)"`.
+
+Support for OpenRouter is planned as a separate adapter.
+
+## Privacy
+
+- Your voice goes to Google, through Google's speech recognizer.
+- The recognized text, your installed app list and the date go to the AI provider.
+- Web search queries go to Brave.
+- tvask keeps a log of what it heard and did on the TV. See Debugging.
 
 ## Go back to Google Assistant
 
@@ -67,7 +116,7 @@ Read what it runs before you allow it.
 
 ## Debugging
 
-tvask saves every result on the TV:
+tvask saves what it heard, its answers and its actions on the TV, with timings:
 
 ```
 adb shell cat /sdcard/Android/data/io.github.urtuba.tvask/files/transcripts.txt

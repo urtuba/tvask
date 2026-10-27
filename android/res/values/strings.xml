@@ -11,4 +11,5 @@
     <string name="searching">Searching the web</string>
     <string name="no_key">No AI key yet. Set one with adb, see the README.</string>
     <string name="failed">Something went wrong: %1$s</string>
+    <string name="no_app_search">%1$s is open. Search in it with the remote.</string>
 </resources>

@@ -16,8 +16,9 @@ Status: early. It answers questions, searches the web, opens apps and searches i
    The guesses help the model fix words the recognizer got wrong.
 5. tvask shows the answer and reads it aloud, or it opens the app and closes itself.
 
-Search inside an app works for YouTube, YouTube Music, Netflix and Prime Video.
-Other apps only open.
+Search inside an app works for YouTube, YouTube Music and Prime Video.
+Other apps only open, and tvask tells you to search with the remote.
+Netflix is one of them: it ignored both search and title links on the tested TV.
 
 The default AI model is DeepSeek (`deepseek-flash`).
 Web search uses the Brave Search API.

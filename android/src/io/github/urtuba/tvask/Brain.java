@@ -22,7 +22,9 @@ final class Brain {
 
         void onAnswer(String text);
 
-        void onAction(String log);
+        // onAction runs after an app was opened. noSearch names the app when
+        // the user asked to search in it but the app has no search link.
+        void onAction(String log, String noSearch);
 
         void onFailure(String message);
     }
@@ -57,6 +59,7 @@ final class Brain {
                 }
                 msgs.put(m);
                 String acted = null;
+                String noSearch = null;
                 for (int i = 0; i < calls.length(); i++) {
                     JSONObject call = calls.getJSONObject(i);
                     JSONObject fn = call.getJSONObject("function");
@@ -73,7 +76,13 @@ final class Brain {
                     } else if (name.equals("search_in_app")) {
                         String pkg = args.optString("package");
                         String q = args.optString("query");
-                        result = actions.searchIn(pkg, q);
+                        if (actions.canSearch(pkg)) {
+                            actions.searchIn(pkg, q);
+                            result = "Opened the search page.";
+                        } else {
+                            result = actions.open(pkg) ? "No search link, only opened." : "App not found.";
+                            noSearch = actions.label(pkg);
+                        }
                         acted = "search_in_app " + pkg + " " + q;
                     } else {
                         result = "Unknown tool.";
@@ -84,7 +93,7 @@ final class Brain {
                             .put("content", result));
                 }
                 if (acted != null) {
-                    l.onAction(acted);
+                    l.onAction(acted, noSearch);
                     return;
                 }
             }
@@ -103,10 +112,12 @@ final class Brain {
                 .append("The guesses can be wrong. English words are often spelled the Turkish way.\n")
                 .append("Work out what the user meant.\n")
                 .append("To open an app, call open_app. To find a show, film, video or song in an app, call search_in_app.\n")
+                .append("Only call them when the user clearly asks for an app or for something to watch or play.\n")
+                .append("If the guesses make no sense, never guess an app. Say in one short sentence that you did not understand.\n")
                 .append("Call web_search for news, weather, scores, prices, or anything you are not sure about.\n")
                 .append("Otherwise answer directly.\n")
                 .append("Your answer is shown on the TV and read aloud.\n")
-                .append("Reply in the user's language, in at most 3 short sentences.\n")
+                .append("Reply in the language of the request, in one language only, in at most 3 short sentences.\n")
                 .append("Do not use markdown, lists or links.\n")
                 .append("Now: ").append(f.format(new Date()))
                 .append(", time zone ").append(TimeZone.getDefault().getID()).append(".\n")

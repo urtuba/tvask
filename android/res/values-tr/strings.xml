@@ -10,4 +10,5 @@
     <string name="searching">İnternette arıyorum</string>
     <string name="no_key">Yapay zeka anahtarı yok. README\'deki adb komutuyla ekle.</string>
     <string name="failed">Bir sorun oldu: %1$s</string>
+    <string name="no_app_search">%1$s açıldı. Bu uygulamada aramayı kumandayla yapman gerekiyor.</string>
 </resources>

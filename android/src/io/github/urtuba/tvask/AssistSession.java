@@ -14,7 +14,10 @@ import android.speech.RecognizerIntent;
 import android.speech.SpeechRecognizer;
 import android.speech.tts.TextToSpeech;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -66,23 +69,29 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         super.onDestroy();
     }
 
+    // The panel is a card at the top. The rest of the screen stays visible.
     @Override
     public View onCreateContentView() {
         LinearLayout box = new LinearLayout(getContext());
         box.setOrientation(LinearLayout.VERTICAL);
-        box.setPadding(64, 40, 64, 40);
-        box.setBackgroundColor(Color.argb(235, 16, 16, 16));
-        TextView title = text(30, Color.WHITE);
+        box.setPadding(40, 24, 40, 28);
+        box.setBackgroundColor(Color.argb(230, 16, 16, 16));
+        TextView title = text(14, Color.GRAY);
         title.setText(R.string.app_name);
-        state = text(22, Color.LTGRAY);
-        words = text(26, Color.rgb(255, 210, 90));
-        answer = text(30, Color.WHITE);
-        answer.setPadding(0, 24, 0, 0);
+        state = text(14, Color.LTGRAY);
+        words = text(18, Color.rgb(255, 210, 90));
+        answer = text(20, Color.WHITE);
+        answer.setPadding(0, 12, 0, 0);
         box.addView(title);
         box.addView(state);
         box.addView(words);
         box.addView(answer);
-        return box;
+        FrameLayout root = new FrameLayout(getContext());
+        FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP);
+        lp.setMargins(48, 32, 48, 0);
+        root.addView(box, lp);
+        return root;
     }
 
     @Override
@@ -225,12 +234,20 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
             }
 
             @Override
-            public void onAction(String log) {
+            public void onAction(String log, final String noSearch) {
                 save("ACTION\t" + ms(start) + "\t" + log);
                 post(myTurn, new Runnable() {
                     @Override
                     public void run() {
-                        hide();
+                        if (noSearch == null) {
+                            hide();
+                            return;
+                        }
+                        String text = getContext().getString(R.string.no_app_search, noSearch);
+                        state.setText("");
+                        answer.setText(text);
+                        speak(text);
+                        hideLater(6000);
                     }
                 });
             }

@@ -15,12 +15,12 @@ import java.util.Map;
 // app's search page.
 final class Actions {
     // Search links per app, tested on a TCL Google TV. %s is the query.
+    // Netflix is missing on purpose: it ignored both search and title links.
     private static final Map<String, String> SEARCH = new HashMap<>();
 
     static {
         SEARCH.put("com.google.android.youtube.tv", "https://www.youtube.com/results?search_query=%s");
         SEARCH.put("com.google.android.youtube.tvmusic", "https://music.youtube.com/search?q=%s");
-        SEARCH.put("com.netflix.ninja", "nflx://www.netflix.com/search?q=%s");
         SEARCH.put("com.amazon.amazonvideo.livingroom", "https://app.primevideo.com/search?phrase=%s");
     }
 
@@ -50,6 +50,14 @@ final class Actions {
         return SEARCH.containsKey(pkg);
     }
 
+    String label(String pkg) {
+        try {
+            return pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString();
+        } catch (PackageManager.NameNotFoundException e) {
+            return pkg;
+        }
+    }
+
     // open starts the app and returns false if it has no launch activity.
     boolean open(String pkg) {
         Intent i = pm.getLeanbackLaunchIntentForPackage(pkg);
@@ -63,17 +71,11 @@ final class Actions {
         return true;
     }
 
-    // searchIn opens the app's search page for query. Apps without a known
-    // search link are only opened. It returns a result line for the model.
-    String searchIn(String pkg, String query) {
-        String link = SEARCH.get(pkg);
-        if (link == null) {
-            return open(pkg) ? "This app has no search link, so it was only opened." : "App not found.";
-        }
-        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(link, Uri.encode(query))));
+    // searchIn opens the app's search page for query. Check canSearch first.
+    void searchIn(String pkg, String query) {
+        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(SEARCH.get(pkg), Uri.encode(query))));
         i.setPackage(pkg);
         start(i);
-        return "Opened the search page.";
     }
 
     private void start(Intent i) {

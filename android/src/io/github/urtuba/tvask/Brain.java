@@ -1,5 +1,6 @@
 package io.github.urtuba.tvask;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.SystemClock;
 
@@ -40,7 +41,9 @@ final class Brain {
         // onAction runs after an app was opened. kind is OPENED, SEARCHED,
         // or NO_SEARCH when the user asked to search in an app that has no
         // search link. detail is the search query or the page's host.
-        void onAction(String log, String pkg, String app, int kind, String detail);
+        // later is an intent to start once the panel is gone, or null when
+        // the app has already started.
+        void onAction(String log, String pkg, String app, int kind, String detail, Intent later);
 
         // onCard hands over card data: Weather.Forecast, Device.Status,
         // Cards.AppList, Cards.SiteList or Cards.Score.
@@ -126,6 +129,7 @@ final class Brain {
             }
             msgs.put(m);
             String acted = null, pkg = null, app = null, detail = null, direct = null, note = null;
+            Intent later = null;
             int kind = OPENED;
             for (int i = 0; i < calls.length(); i++) {
                 JSONObject call = calls.getJSONObject(i);
@@ -184,7 +188,8 @@ final class Brain {
                         }
                     } else if (name.equals("open_url")) {
                         String url = str(args, "url");
-                        if (actions.openUrl(url)) {
+                        later = actions.urlIntent(url);
+                        if (later != null) {
                             result = "Opened.";
                             acted = "open_url " + url;
                             pkg = actions.browser();
@@ -200,7 +205,12 @@ final class Brain {
                             result = "Error: app not found.";
                         } else {
                             if (actions.canSearch(pkg)) {
-                                actions.searchIn(pkg, q);
+                                Intent go = actions.searchIntent(pkg, q);
+                                if (actions.isBrowser(pkg)) {
+                                    later = go;
+                                } else {
+                                    actions.start(go);
+                                }
                                 result = "Opened the search page.";
                                 kind = SEARCHED;
                             } else {
@@ -266,7 +276,7 @@ final class Brain {
             }
             if (acted != null) {
                 remember(ask, "(" + acted + ")");
-                l.onAction(acted, pkg, app, kind, detail);
+                l.onAction(acted, pkg, app, kind, detail, later);
                 return;
             }
             if (direct != null) {
@@ -320,7 +330,8 @@ final class Brain {
                 .append("list_apps, close_apps, system_status, show_sites and show_score show their result on screen and end the turn.\n")
                 .append("Otherwise answer directly.\n")
                 .append("Your answer is shown on the TV and read aloud.\n")
-                .append("Reply in the language of the request, in one language only, in at most 3 short sentences.\n")
+                .append("Reply in the language of the latest request, in one language only, in at most 3 short sentences.\n")
+                .append("This also holds for say fields, even when notes or earlier turns use another language.\n")
                 .append("Do not use markdown, lists or links.\n")
                 .append("Now: ").append(f.format(new Date()))
                 .append(", time zone ").append(TimeZone.getDefault().getID()).append(".\n")
@@ -393,7 +404,7 @@ final class Brain {
                                                 .put("url", url)
                                                 .put("note", prop("A few words on what is there.", null)))
                                         .put("required", new JSONArray().put("title").put("url"))))
-                                .put("say", prop("Short question to read aloud, in the user's language.", null)),
+                                .put("say", prop("Short question to read aloud, in the language of the request.", null)),
                         "sites", "say"))
                 .put(fn("show_score", "Show a match result card.",
                         new JSONObject()
@@ -402,12 +413,12 @@ final class Brain {
                                 .put("home_goals", new JSONObject().put("type", "integer"))
                                 .put("away_goals", new JSONObject().put("type", "integer"))
                                 .put("competition", prop("League or cup.", null))
-                                .put("date", prop("Match date, short, in the user's language.", null))
+                                .put("date", prop("Match date, short, in the language of the request.", null))
                                 .put("venue", prop("Stadium.", null))
                                 .put("home_scorers", strings("Home goals, like \"Osimhen 29'\"."))
                                 .put("away_scorers", strings("Away goals, like \"Szymanski 62'\"."))
                                 .put("note", prop("Optional short extra, like the man of the match.", null))
-                                .put("say", prop("One or two sentence summary to read aloud, in the user's language.", null)),
+                                .put("say", prop("One or two sentence summary to read aloud, in the language of the request.", null)),
                         "home", "away", "home_goals", "away_goals", "say"));
         if (search != null) {
             t.put(fn("web_search", "Search the web. Results are short snippets.",

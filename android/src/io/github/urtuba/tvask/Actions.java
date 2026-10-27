@@ -92,18 +92,18 @@ final class Actions {
         return out;
     }
 
-    // openUrl opens an http or https page in the browser. It returns false
-    // if the link is not a web link or the TV has no browser.
-    boolean openUrl(String url) {
+    // urlIntent returns the intent that opens an http or https page in the
+    // browser, or null if the link is not a web link or there is no browser.
+    // The caller starts it once the panel is gone: a browser started behind
+    // the panel counts as background on some TVs, and TCL then stops its
+    // WebView process.
+    Intent urlIntent(String url) {
         Uri u = Uri.parse(url);
         String browser = browser();
         if (browser == null || !("https".equals(u.getScheme()) || "http".equals(u.getScheme()))) {
-            return false;
+            return null;
         }
-        Intent i = new Intent(Intent.ACTION_VIEW, u);
-        i.setPackage(browser);
-        start(i);
-        return true;
+        return new Intent(Intent.ACTION_VIEW, u).setPackage(browser).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     }
 
     String label(String pkg) {
@@ -142,16 +142,22 @@ final class Actions {
         return true;
     }
 
-    // searchIn opens the app's search page for query. Check canSearch first.
-    void searchIn(String pkg, String query) {
+    // searchIntent returns the intent for the app's search page. Check
+    // canSearch first. For the browser, start it once the panel is gone, see
+    // urlIntent.
+    Intent searchIntent(String pkg, String query) {
         String link = SEARCH.containsKey(pkg) ? SEARCH.get(pkg) : WEB_SEARCH;
-        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(link, Uri.encode(query))));
-        i.setPackage(pkg);
-        start(i);
+        return new Intent(Intent.ACTION_VIEW, Uri.parse(String.format(link, Uri.encode(query))))
+                .setPackage(pkg).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
     }
 
-    private void start(Intent i) {
+    boolean isBrowser(String pkg) {
+        return pkg.equals(browser());
+    }
+
+    void start(Intent i) {
         i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         c.startActivity(i);
     }
+
 }

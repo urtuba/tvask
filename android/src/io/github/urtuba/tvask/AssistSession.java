@@ -40,6 +40,8 @@ import java.util.Locale;
 // The recognizer uses the TV's language. Brain then answers or acts.
 public class AssistSession extends VoiceInteractionSession implements RecognitionListener {
     static final String TAG = "tvask";
+    // TEXT in the show args means adb sent the words, so there is no listening.
+    static final String TEXT = "io.github.urtuba.tvask.TEXT";
     static final ComponentName GOOGLE = new ComponentName("com.google.android.katniss",
             "com.google.android.apps.tvsearch.voice.recognition.KatnissRecognitionService");
     // After a pause, tvask listens again for moreMs, so the user can go on.
@@ -239,6 +241,23 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         spoke = false;
         if (sr != null) {
             sr.destroy();
+            sr = null;
+        }
+        final String typed = args == null ? null : args.getString(TEXT);
+        if (typed != null) {
+            List<String> heard = new ArrayList<>();
+            heard.add(typed);
+            parts.add(heard);
+            meter.setVisibility(View.GONE);
+            line(words, typed);
+            save("HEARD 1\t" + typed + "\ttyped");
+            ui.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    done();
+                }
+            }, 600);
+            return;
         }
         sr = SpeechRecognizer.createSpeechRecognizer(getContext(), GOOGLE);
         sr.setRecognitionListener(this);
@@ -511,11 +530,16 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
             // fades out once it has said it.
             @Override
             public void onAction(String log, final String pkg, final String app, final int kind,
-                    final String detail) {
+                    final String detail, final Intent later) {
                 save("ACTION\t" + ms(start) + "\t" + log);
                 post(myTurn, new Runnable() {
                     @Override
                     public void run() {
+                        if (later != null) {
+                            Conversation.show(said(""), lc.getString(R.string.opened, app));
+                            launch(later);
+                            return;
+                        }
                         if (kind == Brain.NO_SEARCH) {
                             String text = lc.getString(R.string.no_app_search, app);
                             Conversation.show(said(""), text);
@@ -660,14 +684,27 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
 
     // pick opens the site the user chose with the remote.
     private void pick(Cards.Site s) {
-        Actions a = new Actions(lc, new Config(getContext()).browser);
+        Intent go = new Actions(lc, new Config(getContext()).browser).urlIntent(s.url);
         save("PICK\t" + s.url);
         picking = false;
-        if (!a.openUrl(s.url)) {
+        if (go == null) {
             return;
         }
         Conversation.show(said(""), lc.getString(R.string.opened, s.title));
-        opening(a.browser(), lc.getString(R.string.opening, s.title), Uri.parse(s.url).getHost());
+        launch(go);
+    }
+
+    // launch hides the panel and then starts the browser intent, so the
+    // browser starts in front and not behind the panel. It uses its own
+    // handler, because hiding clears ui.
+    private void launch(final Intent go) {
+        hide();
+        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                getContext().startActivity(go);
+            }
+        }, 300);
     }
 
     private void put(View v) {

@@ -13,10 +13,15 @@ import android.content.SharedPreferences;
 //   adb shell am broadcast -n io.github.urtuba.tvask/.ConfigReceiver \
 //       -a io.github.urtuba.tvask.SHOW
 //
-// An empty value removes the setting. SHOW never prints keys.
+//   adb shell am broadcast -n io.github.urtuba.tvask/.ConfigReceiver \
+//       -a io.github.urtuba.tvask.ASK --es text "What's the weather tomorrow?"
+//
+// An empty value removes the setting. SHOW never prints keys. ASK opens
+// the panel as if the user had said the text, for tests and demos.
 public class ConfigReceiver extends BroadcastReceiver {
     static final String SET = "io.github.urtuba.tvask.SET";
     static final String SHOW = "io.github.urtuba.tvask.SHOW";
+    static final String ASK = "io.github.urtuba.tvask.ASK";
 
     @Override
     public void onReceive(Context c, Intent i) {
@@ -40,6 +45,12 @@ public class ConfigReceiver extends BroadcastReceiver {
                 p.edit().putString(name, value).commit();
                 setResultData("set " + name);
             }
+            return;
+        }
+        if (ASK.equals(i.getAction())) {
+            String text = i.getStringExtra("text");
+            boolean ok = text != null && !text.trim().isEmpty() && AssistService.ask(text.trim());
+            setResultData(ok ? "asked" : "not asked: no text, or the assistant is not bound yet");
             return;
         }
         if (SHOW.equals(i.getAction())) {

@@ -37,6 +37,9 @@ button{font:inherit;background:none;color:var(--text);border:1px solid var(--lin
 ol,ul{padding-left:20px}li{margin:4px 0}
 img{max-width:100%;border-radius:4px;border:1px solid var(--line)}
 footer{margin:64px 0 40px;color:var(--muted);font-size:14px}
+.clips{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+figure{margin:0}video{width:100%;border-radius:4px;border:1px solid var(--line);display:block;background:#000}
+figcaption{font-size:14px;color:#cfcfcf;margin-top:6px}
 @media (max-width:600px){h1{font-size:34px}.days{grid-template-columns:repeat(3,1fr)}.days div:nth-child(n+4){display:none}}
 </style>
 </head>
@@ -71,6 +74,16 @@ footer{margin:64px 0 40px;color:var(--muted);font-size:14px}
 </div>
 </div>
 </div>
+
+<h2>See it on a TV</h2>
+<div class="clips">
+<figure><video src="media/weather.mp4" poster="media/weather.jpg" autoplay muted loop playsinline></video><figcaption>"What's the weather in Istanbul tomorrow?"</figcaption></figure>
+<figure><video src="media/youtube.mp4" poster="media/youtube.jpg" autoplay muted loop playsinline></video><figcaption>"Play Barış Manço on YouTube"</figcaption></figure>
+<figure><video src="media/sites.mp4" poster="media/sites.jpg" autoplay muted loop playsinline></video><figcaption>"Show me some news sites in English", then pick one with the remote</figcaption></figure>
+<figure><video src="media/apps.mp4" poster="media/apps.jpg" autoplay muted loop playsinline></video><figcaption>"Which apps are open?"</figcaption></figure>
+<figure><video src="media/status.mp4" poster="media/status.jpg" autoplay muted loop playsinline></video><figcaption>"How much memory is the TV using?"</figcaption></figure>
+</div>
+<p class="small">Recorded on a TCL Google TV. The questions were sent as text through adb, the same path the setup guide uses for tests.</p>
 
 <h2>Every TV is different</h2>
 <p>TV makers add their own memory cleaners, start blockers and key handling. So tvask is not an app you install and forget. You set it up together with your own AI coding agent. It checks your TV, installs tvask, adapts to what it finds, and tests the result with you.</p>

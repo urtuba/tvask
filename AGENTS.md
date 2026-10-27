@@ -119,6 +119,16 @@ adb shell input keyevent KEYCODE_BACK
 `KEYCODE_ASSIST` does not use the remote, so it listens to the TV's own microphone.
 On most TVs that hears nothing, and that is fine here.
 
+To test the model and the panel without a voice, send a question as text:
+
+```
+adb shell am broadcast -n io.github.urtuba.tvask/.ConfigReceiver \
+    -a io.github.urtuba.tvask.ASK --es text "What's the weather tomorrow?"
+```
+
+If it answers `not asked`, the assistant service is not bound yet.
+Run the two `settings put` lines from step 2 again, then retry.
+
 Then ask the person to press the mic key on the remote and say "hello".
 Read the log:
 

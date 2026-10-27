@@ -9,6 +9,19 @@ You set it up together with your own AI coding agent, which checks your TV and a
 
 Site: https://urtuba.github.io/tvask/
 
+## See it
+
+These run on a TCL Google TV. The questions were sent as text through adb, the same path AGENTS.md uses for tests.
+
+| | |
+|---|---|
+| ![Weather card](docs/media/weather.gif) | ![Open apps card](docs/media/apps.gif) |
+| "What's the weather in Istanbul tomorrow?" | "Which apps are open?" |
+| ![Search on YouTube](docs/media/youtube.gif) | ![Site options](docs/media/sites.gif) |
+| "Play Barış Manço on YouTube" | "Show me some news sites in English", then the remote picks one |
+| ![System status card](docs/media/status.gif) | |
+| "How much memory is the TV using?" | |
+
 ## What it does
 
 - Answers questions, in the language you speak, and searches the web when it needs to.
@@ -136,6 +149,8 @@ adb logcat -s tvask
 - An app counts as open if it was used in the last three hours.
   Android does not show other apps' processes to a normal app, so there is no memory or CPU use per app.
   Closing goes to the home screen first, because Android only stops apps in the background.
+- TV Bro may show "Can not link to WebView component" when it starts and restores many tabs on a low memory TV.
+  The page still loads behind the message. Closing old tabs in TV Bro helps.
 - TCL: the window manager sends "close system dialogs" on key presses. tvask ignores it.
 - TCL: the memory cleaner may stop tvask while it is idle. Android starts it again on the next key press.
 

@@ -4,144 +4,406 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>tvask: ask your Android TV</title>
-<meta name="description" content="An open source voice assistant for Android TV. Press the mic key, speak in your own words, and an AI model you choose answers. Set it up with your own AI coding agent.">
+<meta name="description" content="An open source voice assistant for Android TV. Press the mic key and talk. Your own AI coding agent sets it up in one prompt.">
+<meta property="og:title" content="tvask: the mic key, finally worth pressing">
+<meta property="og:description" content="An open source voice assistant for Android TV. Your own AI coding agent sets it up in one prompt.">
+<meta property="og:image" content="https://urtuba.github.io/tvask/media/weather.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#0f0f0f;--panel:#171717;--line:#2c2c2c;--text:#f2f2f2;--muted:#9a9a9a;--accent:#ffd25a;--ok:#7bd88f}
+:root{
+  --room:#1d1712;--wall:#261f19;--line:#3d332a;--text:#f4ece1;--dim:#b2a597;--lamp:#ffd25a;--ink:#1d1712;
+  --sans:"Bricolage Grotesque",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
-a{color:var(--accent)}
-.wrap{max-width:980px;margin:0 auto;padding:0 16px}
-header{padding:64px 0 32px}
-.mark{font-size:15px;color:var(--muted);letter-spacing:.02em}
-h1{font-size:44px;line-height:1.15;margin:8px 0 12px;font-weight:600}
-h2{font-size:24px;margin:56px 0 12px;font-weight:600}
-.lead{font-size:19px;color:#d6d6d6;max-width:640px;margin:0}
-.btns{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 0}
-.btn{display:inline-block;padding:10px 16px;border:1px solid var(--line);border-radius:4px;color:var(--text);text-decoration:none}
-.btn.main{background:var(--accent);border-color:var(--accent);color:#1a1a1a;font-weight:600}
-.tv{background:#2a2a2a;border-radius:6px;padding:20px;margin:40px 0 0}
-.card{background:var(--panel);border-radius:4px;padding:18px 22px;max-width:760px}
-.small{font-size:13px;color:var(--muted)}
-.heard{color:var(--accent);font-size:18px}
-.answer{font-size:19px;margin:6px 0 14px}
-.meter{display:flex;gap:6px;margin:8px 0 10px}.meter i{width:10px;height:10px;border-radius:2px;background:#3a3a3a}.meter i.on{background:var(--accent)}
-.now{display:flex;align-items:baseline;gap:14px}.temp{font-size:44px;font-weight:600}
-.days{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px;text-align:center;font-size:14px}
-.days b{display:block;color:var(--muted);font-weight:400}.days em{color:var(--accent);font-style:normal}
-.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
-.item{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px}
-.item h3{margin:0 0 4px;font-size:16px}.item p{margin:0;color:#cfcfcf;font-size:15px}
-pre{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px;overflow-x:auto;white-space:pre-wrap;margin:0}
-.copy{margin-top:8px}
-button{font:inherit;background:none;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:8px 14px;cursor:pointer}
-ol,ul{padding-left:20px}li{margin:4px 0}
-img{max-width:100%;border-radius:4px;border:1px solid var(--line)}
-footer{margin:64px 0 40px;color:var(--muted);font-size:14px}
-.clips{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
-figure{margin:0}video{width:100%;border-radius:4px;border:1px solid var(--line);display:block;background:#000}
-figcaption{font-size:14px;color:#cfcfcf;margin-top:6px}
-@media (max-width:600px){h1{font-size:34px}.days{grid-template-columns:repeat(3,1fr)}.days div:nth-child(n+4){display:none}}
+html{scroll-behavior:smooth;overflow-x:clip}
+body{overflow-x:clip}
+body{margin:0;color:var(--text);font:400 17px/1.55 var(--sans);
+  background:radial-gradient(70% 50% at 12% -8%,rgba(255,196,110,.13),transparent 70%),var(--room);background-repeat:no-repeat}
+a{color:inherit;text-decoration-color:rgba(244,236,225,.4);text-underline-offset:3px}
+a:hover{text-decoration-color:var(--lamp)}
+:focus-visible{outline:2px solid var(--lamp);outline-offset:3px}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+h1,h2,h3{font-weight:760;letter-spacing:-.025em;margin:0}
+h2{font-size:clamp(30px,4vw,44px);line-height:1.05}
+h3{font-size:19px;letter-spacing:-.01em}
+p{margin:0}
+.sub{color:var(--dim);font-size:19px;max-width:62ch;margin-top:14px}
+.fine{color:var(--dim);font-size:14px}
+q{quotes:"\201C" "\201D"}
+
+/* top */
+.top{display:flex;justify-content:space-between;align-items:center;padding-top:22px;padding-bottom:22px}
+.logo{display:flex;align-items:center;gap:10px;font-weight:760;font-size:20px;text-decoration:none;letter-spacing:-.02em}
+.bars{display:flex;gap:3px}.bars i{width:7px;height:7px;background:var(--lamp);border-radius:1px}.bars i:last-child{background:#5a4c3c}
+.links{display:flex;gap:22px;font-size:15px}.links a{text-decoration:none;color:var(--dim)}.links a:hover{color:var(--text)}
+
+/* hero */
+.hero{display:grid;grid-template-columns:1.35fr 1fr;gap:48px;align-items:end;padding-top:56px;padding-bottom:48px}
+h1{font-size:clamp(46px,7.2vw,92px);line-height:.94;letter-spacing:-.04em;font-weight:780}
+.intro p{font-size:19px;color:#e2d8cb}
+.cta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.btn{display:inline-flex;align-items:center;justify-content:center;font:600 16px/1 var(--sans);padding:13px 18px;border-radius:4px;border:1px solid var(--line);color:var(--text);text-decoration:none;cursor:pointer;background:none}
+.btn:hover{border-color:var(--dim)}
+.btn.main{background:var(--text);border-color:var(--text);color:var(--ink)}
+.btn.main:hover{background:#fff}
+
+/* stage: the TV and the remote */
+.stage{max-width:1180px}
+.set{position:relative;padding-right:13%}
+.tv{position:relative;background:#050505;border-radius:7px;padding:1.1%;
+  box-shadow:0 0 0 1px #2b2520,0 0 140px -20px rgba(120,150,200,.38),0 50px 90px -40px #000}
+.tv video{display:block;width:100%;aspect-ratio:16/9;background:#000;border-radius:2px}
+.stand{width:30%;height:16px;margin:0 auto;background:linear-gradient(#0b0b0b,#151210);clip-path:polygon(9% 0,91% 0,100% 100%,0 100%)}
+.remote{position:absolute;right:0;bottom:-6%;width:11.5%;transform:rotate(9deg);transform-origin:50% 100%;filter:drop-shadow(0 26px 22px rgba(0,0,0,.55))}
+.remote svg{display:block;width:100%;height:auto}
+.mic{position:absolute;left:29%;top:16.2%;width:42%;aspect-ratio:1;border-radius:50%;border:0;background:transparent;cursor:pointer;padding:0}
+.mic::after{content:"";position:absolute;inset:0;border-radius:50%;box-shadow:0 0 0 0 rgba(255,210,90,.55);animation:call 2.4s ease-out infinite}
+.mic:active,.mic.down{transform:translateY(1.5px) scale(.96)}
+.remote .key{transition:filter .15s}
+.remote.lit .key{filter:brightness(1.18)}
+@keyframes call{0%{box-shadow:0 0 0 0 rgba(255,210,90,.5)}70%,100%{box-shadow:0 0 0 18px rgba(255,210,90,0)}}
+
+.asks{display:flex;flex-wrap:wrap;gap:8px;margin-top:34px;padding-right:13%}
+.ask{position:relative;overflow:hidden;font:500 15px/1.3 var(--sans);color:var(--dim);background:rgba(0,0,0,.18);border:1px solid var(--line);border-radius:4px;padding:10px 14px;cursor:pointer;text-align:left}
+.ask:hover{color:var(--text)}
+.ask[aria-pressed="true"]{color:var(--lamp);border-color:#6b5a35}
+.ask .bar{position:absolute;left:0;bottom:0;height:2px;width:100%;background:var(--lamp);transform-origin:0 50%;transform:scaleX(var(--p,0));transition:transform .26s linear}
+.ask[aria-pressed="false"] .bar{display:none}
+.hint{margin-top:14px}
+
+/* setup */
+section.wrap{padding-top:120px}
+.setup-grid{display:grid;grid-template-columns:1fr 1.25fr;gap:40px;margin-top:40px;align-items:start}
+.before{list-style:none;margin:0;padding:0;counter-reset:s}
+.before li{counter-increment:s;position:relative;padding:0 0 22px 44px}
+.before li::before{content:counter(s);position:absolute;left:0;top:1px;width:28px;height:28px;border-radius:4px;background:var(--wall);border:1px solid var(--line);display:grid;place-items:center;font-weight:700;font-size:14px}
+.before b{display:block;font-size:18px}
+.before span{color:var(--dim)}
+.builder{background:var(--wall);border:1px solid var(--line);border-radius:6px;padding:22px}
+.row{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.builder label{font-weight:600}
+.builder input{flex:1;min-width:200px;font:500 17px var(--sans);color:var(--text);background:var(--room);border:1px solid var(--line);border-radius:4px;padding:11px 12px}
+.builder input::placeholder{color:#7d7064}
+.tabs{display:flex;gap:4px;margin:18px 0 10px}
+.tab{font:500 14px var(--sans);color:var(--dim);background:none;border:1px solid transparent;border-radius:4px;padding:6px 10px;cursor:pointer}
+.tab[aria-selected="true"]{color:var(--text);border-color:var(--line);background:var(--room)}
+pre,code{font-family:var(--mono)}
+.prompt{margin:0;background:#120e0b;border:1px solid var(--line);border-radius:4px;padding:16px;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere;min-height:110px}
+.copyrow{display:flex;gap:14px;align-items:center;margin-top:12px}
+.then{margin-top:64px}
+.does{list-style:none;margin:14px 0 0;padding:0;display:grid;grid-template-columns:repeat(6,1fr);gap:0;counter-reset:d;border-top:1px solid var(--line)}
+.does li{counter-increment:d;padding:18px 16px 0 0;font-size:15px;color:#e2d8cb}
+.does li::before{content:counter(d);display:block;font-weight:700;color:var(--dim);margin-bottom:6px;font-size:14px}
+
+/* phrases */
+.phrases{margin:36px 0 0;display:grid;gap:0}
+.phrases div{display:grid;grid-template-columns:230px 1fr;gap:24px;padding:18px 0;border-top:1px solid var(--line)}
+.phrases dt{font-weight:700}
+.phrases dd{margin:0;display:flex;flex-wrap:wrap;gap:6px 22px}
+.phrases q{color:var(--lamp);font-size:18px}
+.lang{margin-top:16px}
+
+/* settings */
+.ontv{display:grid;grid-template-columns:1fr 1.3fr;gap:40px;align-items:center}
+.shot{margin:0}
+.ontv img{width:100%;border-radius:6px;border:1px solid var(--line);display:block}
+.shot figcaption{margin-top:10px}
+
+/* tune-up */
+.fixes{margin-top:36px}
+.fix{display:grid;grid-template-columns:1fr 1.25fr;gap:32px;padding:24px 0;border-top:1px solid var(--line)}
+.fix p{color:var(--dim);margin-top:6px}
+.fix .done{display:inline-block;margin-top:10px;font-size:13px;color:#e2d8cb;border:1px solid var(--line);border-radius:3px;padding:2px 7px}
+.pbox{position:relative;background:#120e0b;border:1px solid var(--line);border-radius:4px;padding:14px;font-size:13px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+.pbox .btn{position:absolute;top:10px;right:10px;padding:8px 12px;font-size:14px}
+
+/* more */
+.more{display:grid;grid-template-columns:1fr 1fr;gap:48px}
+.more h2{font-size:28px}
+.more p,.more ul{color:#e2d8cb;margin-top:14px}
+.more ul{padding-left:18px}.more li{margin:6px 0}
+footer.wrap{margin-top:110px;padding-top:24px;padding-bottom:48px;border-top:1px solid var(--line);color:var(--dim);font-size:14px;display:flex;flex-wrap:wrap;gap:8px 24px;justify-content:space-between}
+
+@media (max-width:900px){
+  .hero,.setup-grid,.ontv,.fix,.more{grid-template-columns:1fr}
+  .hero{gap:24px;padding-top:32px}
+  .does{grid-template-columns:repeat(3,1fr);row-gap:20px}
+  .phrases div{grid-template-columns:1fr;gap:8px}
+}
+@media (max-width:640px){
+  .wrap{padding-left:16px;padding-right:16px}
+  body{font-size:16px}
+  .sub,.intro p{font-size:17px}
+  .set,.asks{padding-right:0}
+  .remote{width:44px;right:64px;bottom:-96px;transform:rotate(-82deg);transform-origin:50% 50%}
+  .cta .btn{flex:1}
+  .asks{margin:40px -16px 0;padding:0 16px 4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}
+  .ask{flex:none;white-space:nowrap}
+  .does{grid-template-columns:1fr 1fr}
+  section.wrap{padding-top:88px}
+  .pbox{padding:14px}
+  .pbox .btn{position:static;display:flex;width:max-content;margin-top:10px}
+}
+@media (prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  .mic::after{animation:none}
+  .ask .bar{transition:none}
+}
 </style>
 </head>
 <body>
-<div class="wrap">
 
-<header>
-<div class="mark">tvask</div>
-<h1>Ask your Android TV<br>in your own words.</h1>
-<p class="lead">Press the mic key on your remote and speak. An AI model you choose answers, searches the web, opens apps and shows cards. Open source, MIT licensed.</p>
-<div class="btns">
-<a class="btn main" href="https://github.com/urtuba/tvask/blob/main/AGENTS.md">Set it up with your agent</a>
-<a class="btn" href="https://github.com/urtuba/tvask/releases/latest">Download the APK</a>
-<a class="btn" href="https://github.com/urtuba/tvask">Source on GitHub</a>
+<nav class="top wrap" aria-label="Site">
+<a class="logo" href="./"><span class="bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>tvask</a>
+<div class="links"><a href="https://github.com/urtuba/tvask/releases/latest">v0.1.0</a><a href="https://github.com/urtuba/tvask">GitHub</a></div>
+</nav>
+
+<header class="hero wrap">
+<h1>The mic key, finally worth pressing.</h1>
+<div class="intro">
+<p>tvask is an open source assistant for Android TV. Press the mic key on your remote and talk. It answers in your language, searches the web, opens apps and finds the show.</p>
+<div class="cta"><a class="btn main" href="#setup">Get the setup prompt</a><a class="btn" href="https://github.com/urtuba/tvask">Read the code</a></div>
 </div>
 </header>
 
-<div class="tv" aria-label="What tvask looks like on the TV">
-<div class="card">
-<div class="small">tvask</div>
-<div class="meter" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-<div class="heard">What's the weather in Ankara tomorrow?</div>
-<div class="answer">Tomorrow in Ankara it stays overcast, between 10 and 19 degrees, with a small chance of rain.</div>
-<div class="small">Ankara · now</div>
-<div class="now"><span class="temp">17°</span><span>Overcast · feels 16° · wind 7 km/h</span></div>
-<div class="days">
-<div><b>Wed</b>Rain<br>10° / 17°<br><em>53%</em></div>
-<div><b>Thu</b>Overcast<br>10° / 19°<br><em>23%</em></div>
-<div><b>Fri</b>Rain<br>10° / 16°<br><em>69%</em></div>
-<div><b>Sat</b>Clear<br>8° / 17°<br><em>8%</em></div>
-<div><b>Sun</b>Clear<br>9° / 18°<br><em>5%</em></div>
+<div class="stage wrap">
+<div class="set">
+<div class="tv"><video id="screen" src="media/weather.mp4" poster="media/weather.jpg" muted playsinline preload="auto" aria-label="tvask answering on a TV"></video></div>
+<div class="stand" aria-hidden="true"></div>
+<div class="remote" id="remote">
+<svg viewBox="0 0 120 430" aria-hidden="true">
+<defs>
+<linearGradient id="body" x1="0" x2="1"><stop offset="0" stop-color="#3a342e"/><stop offset=".5" stop-color="#2c2723"/><stop offset="1" stop-color="#1f1b18"/></linearGradient>
+<radialGradient id="pad" cx=".45" cy=".4"><stop offset="0" stop-color="#3a342e"/><stop offset="1" stop-color="#26221e"/></radialGradient>
+</defs>
+<rect x="4" y="4" width="112" height="422" rx="46" fill="url(#body)" stroke="#4d453d"/>
+<rect x="10" y="10" width="100" height="410" rx="40" fill="none" stroke="rgba(255,255,255,.05)"/>
+<circle cx="60" cy="40" r="7" fill="#24201c" stroke="#5c5248"/>
+<path d="M60 35v5" stroke="#8a7d70" stroke-width="1.6" stroke-linecap="round"/>
+<g class="key"><circle cx="60" cy="92" r="24" fill="#ffd25a"/>
+<rect x="55" y="80" width="10" height="16" rx="5" fill="#1d1712"/>
+<path d="M50.5 90a9.5 9.5 0 0 0 19 0M60 99.5v5" stroke="#1d1712" stroke-width="2.4" fill="none" stroke-linecap="round"/></g>
+<circle cx="60" cy="182" r="46" fill="url(#pad)" stroke="#4d453d"/>
+<circle cx="60" cy="182" r="19" fill="#332d28" stroke="#4d453d"/>
+<path d="M60 143l-4 4h8zM60 221l-4-4h8zM21 182l4-4v8zM99 182l-4-4v8z" fill="#6f6459"/>
+<circle cx="35" cy="256" r="13" fill="#2a2521" stroke="#4d453d"/>
+<path d="M39 256h-8m3-3.5-3.5 3.5 3.5 3.5" stroke="#8a7d70" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+<circle cx="85" cy="256" r="13" fill="#2a2521" stroke="#4d453d"/>
+<path d="M80 257.5l5-4.5 5 4.5v4h-10z" stroke="#8a7d70" stroke-width="1.5" fill="none" stroke-linejoin="round"/>
+<rect x="45" y="288" width="30" height="78" rx="15" fill="#2a2521" stroke="#4d453d"/>
+<path d="M60 302v8M56 306h8M56 350h8" stroke="#8a7d70" stroke-width="1.6" stroke-linecap="round"/>
+<g fill="#4d453d"><circle cx="30" cy="304" r="5"/><circle cx="30" cy="327" r="5"/><circle cx="30" cy="350" r="5"/><circle cx="90" cy="304" r="5"/><circle cx="90" cy="327" r="5"/><circle cx="90" cy="350" r="5"/></g>
+<text x="60" y="400" text-anchor="middle" font-family="Bricolage Grotesque,sans-serif" font-size="11" font-weight="700" fill="#6b5f53">tvask</text>
+</svg>
+<button class="mic" id="mic" type="button" aria-label="Press the mic key for the next question"></button>
 </div>
 </div>
+<div class="asks" id="asks">
+<button class="ask" type="button" data-clip="weather" aria-pressed="true"><q>What's the weather in Istanbul tomorrow?</q><span class="bar"></span></button>
+<button class="ask" type="button" data-clip="youtube" aria-pressed="false"><q>Play Barış Manço on YouTube</q><span class="bar"></span></button>
+<button class="ask" type="button" data-clip="sites" aria-pressed="false"><q>Show me some news sites in English</q><span class="bar"></span></button>
+<button class="ask" type="button" data-clip="apps" aria-pressed="false"><q>Which apps are open?</q><span class="bar"></span></button>
+<button class="ask" type="button" data-clip="status" aria-pressed="false"><q>How much memory is the TV using?</q><span class="bar"></span></button>
+</div>
+<p class="hint fine">Recorded on a TCL Google TV. Press the mic key on the remote for the next one.</p>
 </div>
 
-<h2>See it on a TV</h2>
-<div class="clips">
-<figure><video src="media/weather.mp4" poster="media/weather.jpg" autoplay muted loop playsinline></video><figcaption>"What's the weather in Istanbul tomorrow?"</figcaption></figure>
-<figure><video src="media/youtube.mp4" poster="media/youtube.jpg" autoplay muted loop playsinline></video><figcaption>"Play Barış Manço on YouTube"</figcaption></figure>
-<figure><video src="media/sites.mp4" poster="media/sites.jpg" autoplay muted loop playsinline></video><figcaption>"Show me some news sites in English", then pick one with the remote</figcaption></figure>
-<figure><video src="media/apps.mp4" poster="media/apps.jpg" autoplay muted loop playsinline></video><figcaption>"Which apps are open?"</figcaption></figure>
-<figure><video src="media/status.mp4" poster="media/status.jpg" autoplay muted loop playsinline></video><figcaption>"How much memory is the TV using?"</figcaption></figure>
+<section id="setup" class="wrap">
+<h2>Set it up in one prompt</h2>
+<p class="sub">You don't need the TV's address or a manual. Your coding agent finds the TV on your Wi-Fi, checks it, installs tvask and works around your TV maker's quirks. It shows every command first.</p>
+<div class="setup-grid">
+<ol class="before">
+<li><b>Turn on developer mode</b><span>On the TV: Settings, System, About. Press OK on Android TV OS build seven times.</span></li>
+<li><b>Turn on USB debugging</b><span>Settings, System, Developer options. It lets your computer talk to the TV over Wi-Fi.</span></li>
+<li><b>Get two API keys</b><span><a href="https://platform.deepseek.com/api_keys">DeepSeek</a>, or any OpenAI compatible model, and <a href="https://brave.com/search/api/">Brave Search</a>. Your agent sends them to the TV, never to a file.</span></li>
+</ol>
+<div class="builder">
+<div class="row"><label for="model">Your TV</label><input id="model" type="text" placeholder="Brand and model, for example TCL 50P735" autocomplete="off" spellcheck="false"></div>
+<div class="tabs" role="tablist" aria-label="Agent">
+<button class="tab" type="button" role="tab" aria-selected="true" data-run="">Any agent</button>
+<button class="tab" type="button" role="tab" aria-selected="false" data-run="claude">Claude Code</button>
+<button class="tab" type="button" role="tab" aria-selected="false" data-run="codex">Codex</button>
 </div>
-<p class="small">Recorded on a TCL Google TV. The questions were sent as text through adb, the same path the setup guide uses for tests.</p>
+<pre class="prompt" id="prompt" role="tabpanel" aria-live="polite"></pre>
+<div class="copyrow"><button class="btn main" type="button" id="copy">Copy</button><span class="fine" id="copied"></span></div>
+</div>
+</div>
+<h3 class="then">Then your agent</h3>
+<ol class="does">
+<li>Finds your TV on the Wi-Fi. You allow it on the TV.</li>
+<li>Checks Android, the Google app and the remote.</li>
+<li>Installs tvask and gives it what it needs.</li>
+<li>Works around your TV maker's blockers.</li>
+<li>Sends your keys to the TV.</li>
+<li>Asks you to press the mic key and say hello.</li>
+</ol>
+<p class="fine" style="margin-top:28px">Works with Claude Code, Codex, Gemini CLI, Cursor or any agent that can run adb. An agent with adb has shell rights on your TV, so read what it runs before you allow it. Prefer to do it by hand? Follow <a href="https://github.com/urtuba/tvask/blob/main/AGENTS.md">AGENTS.md</a>.</p>
+</section>
 
-<h2>Every TV is different</h2>
-<p>TV makers add their own memory cleaners, start blockers and key handling. So tvask is not an app you install and forget. You set it up together with your own AI coding agent. It checks your TV, installs tvask, adapts to what it finds, and tests the result with you.</p>
-<p>Turn on Developer options and USB debugging on the TV, then give your agent this prompt:</p>
-<pre id="prompt">Read AGENTS.md in https://github.com/urtuba/tvask and set up tvask on my TV
-at &lt;tv-ip&gt;. Show me each command before you run it.</pre>
-<button class="copy" id="copy" type="button">Copy the prompt</button>
-<p class="small">An agent with adb access has shell rights on your TV. Read what it runs before you allow it.</p>
+<section class="wrap">
+<h2>Talk to it like a person</h2>
+<dl class="phrases">
+<div><dt>Ask and search</dt><dd><q>Will it rain this weekend?</q><q>Is GitHub down?</q><q>What was the Beşiktaş score?</q></dd></div>
+<div><dt>Find something to watch</dt><dd><q>Play Barış Manço on YouTube</q><q>Search Prime Video for The Boys</q><q>Open YouTube Music</q></dd></div>
+<div><dt>Browse on the TV</dt><dd><q>Show me some news sites in English</q><q>What's on the front page of bbc.com?</q></dd></div>
+<div><dt>Run the TV</dt><dd><q>Which apps are open?</q><q>Close them all</q><q>How much storage is left?</q></dd></div>
+<div><dt>Keep talking</dt><dd><q>And on Saturday?</q><q>Remember that I live in Istanbul</q></dd></div>
+<div><dt>Know what's on</dt><dd><q>What am I watching?</q><q>Who plays in this?</q></dd></div>
+</dl>
+<p class="fine lang">It answers in the language you speak, and shows cards for the weather, scores, sites, open apps and memory. Google's recognizer on the TV hears your TV's language best.</p>
+</section>
 
-<h2>What you need</h2>
+<section class="wrap ontv">
+<div>
+<h2>Settings live on the TV</h2>
+<p class="sub">Reading speed, the wait after you pause, the browser, the screen language and the memory size. Change them with the remote, or say <q style="color:var(--lamp)">open tvask settings</q>.</p>
+</div>
+<figure class="shot"><img src="img/settings.png" alt="The tvask settings screen on a TV, in Turkish" loading="lazy"><figcaption class="fine">The settings screen on a Turkish TV. tvask's own texts come in English and Turkish.</figcaption></figure>
+</section>
+
+<section id="tune" class="wrap">
+<h2>Fix the rest of the TV, too</h2>
+<p class="sub">The same agent can fix what makes Android TVs annoying. We did all of these on our TCL. Each prompt points your agent to a short guide, and it asks before every change.</p>
+<div class="fixes">
+<article class="fix"><div><h3>The TV feels slow</h3><p>Finds what eats memory, turns off apps you never use, and makes menus quicker. Everything can be undone.</p><span class="done">Our 2 GB TCL runs with 28 apps off</span></div>
+<div class="pbox"><code>My Android TV feels slow.
+Follow "Slow TV" in
+https://raw.githubusercontent.com/urtuba/tvask/main/TUNEUP.md
+and ask me before every change.</code><button class="btn main" type="button">Copy</button></div></article>
+<article class="fix"><div><h3>The home screen is heavy</h3><p>Moves you to a light launcher without ads, and only removes the old one once the new one works.</p><span class="done">We use Projectivy Launcher</span></div>
+<div class="pbox"><code>Move my Android TV to a lighter home screen.
+Follow "Lighter home screen" in
+https://raw.githubusercontent.com/urtuba/tvask/main/TUNEUP.md
+and ask me before every change.</code><button class="btn main" type="button">Copy</button></div></article>
+<article class="fix"><div><h3>Remote keys do nothing</h3><p>Gives dead keys a new job with <a href="https://github.com/urtuba/tvkeys">tvkeys</a>, for example opening your favorite app. No root, no lag.</p><span class="done">Five keys on our remote</span></div>
+<div class="pbox"><code>Some keys on my TV remote do nothing.
+Follow "Remote keys that do nothing" in
+https://raw.githubusercontent.com/urtuba/tvask/main/TUNEUP.md
+and ask me before every change.</code><button class="btn main" type="button">Copy</button></div></article>
+<article class="fix"><div><h3>The mic key does nothing</h3><p>Checks whether the remote is really connected over Bluetooth, and walks you through pairing it again.</p><span class="done">Our remote was paired but never connected</span></div>
+<div class="pbox"><code>The mic key on my TV remote does nothing.
+Follow "The mic key does nothing" in
+https://raw.githubusercontent.com/urtuba/tvask/main/TUNEUP.md
+and ask me before every change.</code><button class="btn main" type="button">Copy</button></div></article>
+<article class="fix"><div><h3>Show an iPhone on the TV</h3><p>Turns the TV into an AirPlay receiver. Screen and sound, upright or sideways, no app on the phone.</p><span class="done">On the Media key of our remote</span></div>
+<div class="pbox"><code>I want to show my iPhone screen on my Android TV.
+Follow "Show an iPhone on the TV" in
+https://raw.githubusercontent.com/urtuba/tvask/main/TUNEUP.md
+and ask me before every change.</code><button class="btn main" type="button">Copy</button></div></article>
+</div>
+</section>
+
+<section class="wrap more">
+<div>
+<h2>Your TV needs a code change? Fork it.</h2>
+<p>Most TVs need only settings and adb commands. If yours needs more, fork the repository and keep the change there. Search links, the panel and the model's tools each live in one file. Send back fixes that help every TV, and <a href="https://github.com/urtuba/tvask/issues">tell us about your TV</a>.</p>
+</div>
+<div>
+<h2>Where your data goes</h2>
 <ul>
-<li>Android TV or Google TV with Android 11 or newer, with the Google app for Android TV.</li>
-<li>A voice remote paired over Bluetooth. An IR-only remote sends no audio.</li>
-<li>A computer with adb, and an AI coding agent that can run shell commands.</li>
-<li>An API key for an OpenAI compatible chat model, DeepSeek by default, and a Brave Search API key.</li>
+<li>Your voice goes to Google's speech recognizer on the TV.</li>
+<li>The words, your app list and your memory notes go to the model provider you chose.</li>
+<li>What is playing and on screen goes only when you ask about it. No screenshots, and you can turn it off.</li>
+<li>Searches go to Brave, weather places to Open-Meteo. Keys stay on the TV.</li>
 </ul>
-
-<h2>What it can do</h2>
-<div class="grid">
-<div class="item"><h3>Answer and search</h3><p>Answers in the language you speak, and searches the web or reads a page when it needs to.</p></div>
-<div class="item"><h3>Open and find</h3><p>Opens apps and searches inside YouTube, YouTube Music, Prime Video and the browser.</p></div>
-<div class="item"><h3>Cards</h3><p>Weather, site options you pick with OK, match scores, open apps and system status.</p></div>
-<div class="item"><h3>The TV itself</h3><p>Lists and closes open apps, checks whether a site works, shows memory and storage.</p></div>
-<div class="item"><h3>Conversation and memory</h3><p>Follow-up questions work for five minutes. Small notes about you stay on the TV.</p></div>
-<div class="item"><h3>Context, not pixels</h3><p>Knows what is playing and what the app in front shows, if you allow it. Never uses screenshots.</p></div>
 </div>
+</section>
 
-<h2>Settings on the TV</h2>
-<p>Reading speed, the wait after a pause, the browser, the screen language and the memory size. Change them with the remote.</p>
-<img src="img/settings.png" alt="The tvask settings screen on a TV, in English" loading="lazy">
-
-<h2>Your TV needs a change? Fork it.</h2>
-<p>Most TVs need only settings and adb commands. If yours needs code changes, fork the repository and keep them in your fork. Search links, the panel and the model's tools each live in one file. Send back fixes that help every TV as a pull request, and tell us about your TV in an issue.</p>
-
-<h2>Privacy</h2>
-<ul>
-<li>Your voice goes to Google, through Google's speech recognizer on the TV.</li>
-<li>The recognized text, your app list and your memory notes go to the chat model provider you chose. The TV context goes only when you ask about it, and you can turn it off.</li>
-<li>Text from web pages and the screen is treated as data. While it is in a turn, tvask cannot close apps or change its memory.</li>
-<li>Web searches go to Brave. Weather places go to Open-Meteo.</li>
-<li>API keys stay in the app's private storage. Only adb can set them.</li>
-</ul>
-
-<footer>
-<p>Tested on a TCL 50P735 with the RC902V remote. MIT license. <a href="https://github.com/urtuba/tvask">github.com/urtuba/tvask</a></p>
+<footer class="wrap">
+<span>tvask is MIT licensed. Tested on a TCL 50P735 with the RC902V remote.</span>
+<a href="https://github.com/urtuba/tvask">github.com/urtuba/tvask</a>
 </footer>
 
-</div>
 <script>
-document.getElementById('copy').addEventListener('click', function () {
-  var b = this, text = document.getElementById('prompt').textContent;
-  navigator.clipboard.writeText(text).then(function () {
-    b.textContent = 'Copied';
-    setTimeout(function () { b.textContent = 'Copy the prompt'; }, 1500);
-  }, function () {
-    b.textContent = 'Select the text to copy it';
+(function () {
+  var clips = ['weather', 'youtube', 'sites', 'apps', 'status'];
+  var video = document.getElementById('screen');
+  var asks = [].slice.call(document.querySelectorAll('.ask'));
+  var remote = document.getElementById('remote');
+  var still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var current = 0, visible = true, started = !still;
+
+  function show(n, play) {
+    current = (n + clips.length) % clips.length;
+    video.poster = 'media/' + clips[current] + '.jpg';
+    video.src = 'media/' + clips[current] + '.mp4';
+    asks.forEach(function (a, k) {
+      a.setAttribute('aria-pressed', k === current ? 'true' : 'false');
+      a.style.setProperty('--p', 0);
+    });
+    var row = asks[current].parentNode;
+    if (row.scrollWidth > row.clientWidth) row.scrollTo({ left: asks[current].offsetLeft - 16, behavior: still ? 'auto' : 'smooth' });
+    if (play) { started = true; video.play().catch(function () {}); }
+  }
+
+  video.addEventListener('timeupdate', function () {
+    if (video.duration) asks[current].style.setProperty('--p', video.currentTime / video.duration);
   });
-});
+  video.addEventListener('ended', function () { show(current + 1, visible); });
+  asks.forEach(function (a, k) {
+    a.addEventListener('click', function () { show(k, true); });
+  });
+  document.getElementById('mic').addEventListener('click', function () {
+    var m = this;
+    m.classList.add('down'); remote.classList.add('lit');
+    setTimeout(function () { m.classList.remove('down'); remote.classList.remove('lit'); }, 160);
+    show(current + 1, true);
+  });
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(function (e) {
+      visible = e[0].isIntersecting;
+      if (!started) return;
+      if (visible) video.play().catch(function () {}); else video.pause();
+    }, { threshold: 0.25 }).observe(video);
+  } else if (started) {
+    video.play().catch(function () {});
+  }
+
+  var AGENTS = 'https://raw.githubusercontent.com/urtuba/tvask/main/AGENTS.md';
+  var model = document.getElementById('model');
+  var out = document.getElementById('prompt');
+  var tabs = [].slice.call(document.querySelectorAll('.tab'));
+  var run = '';
+
+  function text() {
+    var m = model.value.replace(/[^\p{L}\p{N} .+\-\/()]/gu, '').replace(/\s+/g, ' ').trim();
+    var tv = m ? 'my TV, a ' + m : 'my Android TV';
+    var t = ['Set up tvask on ' + tv + '.', 'It is on my Wi-Fi. Follow', AGENTS, 'and show me each command before you run it.'];
+    return run ? run + ' "' + t.join(' ') + '"' : t.join('\n');
+  }
+  function render() { out.textContent = text(); }
+  model.addEventListener('input', render);
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      run = t.getAttribute('data-run');
+      tabs.forEach(function (x) { x.setAttribute('aria-selected', x === t ? 'true' : 'false'); });
+      render();
+    });
+  });
+  render();
+
+  function copy(button, value, note) {
+    var label = button.textContent;
+    navigator.clipboard.writeText(value).then(function () {
+      button.textContent = 'Copied';
+      if (note) note.textContent = run ? 'Paste it in your terminal.' : 'Paste it into your agent.';
+      setTimeout(function () { button.textContent = label; }, 1600);
+    }, function () {
+      var r = document.createRange(); r.selectNodeContents(button.previousElementSibling || out);
+      var s = getSelection(); s.removeAllRanges(); s.addRange(r);
+      button.textContent = 'Selected, copy it';
+    });
+  }
+  var copied = document.getElementById('copied');
+  document.getElementById('copy').addEventListener('click', function () { copy(this, text(), copied); });
+  [].forEach.call(document.querySelectorAll('.pbox .btn'), function (b) {
+    b.addEventListener('click', function () { copy(b, b.previousElementSibling.textContent); });
+  });
+})();
 </script>
 </body>
 </html>

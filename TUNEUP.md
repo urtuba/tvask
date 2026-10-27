@@ -11,7 +11,7 @@ Each part below is one problem. Do only the part they asked for.
 
 These worked on a TCL 50P735 with 2 GB of RAM. Other TVs have other package names, so look before you act.
 
-## Slow TV
+## The TV feels slow
 
 Look first:
 
@@ -40,7 +40,7 @@ adb shell pm disable-user --user 0 <package>
 
 Never disable these:
 
-- the current home app, and the stock home until another one works (see "Lighter home screen")
+- the current home app, and the stock home until another one works (see "The home screen is heavy")
 - `com.google.android.katniss`, `com.google.android.tv.remote.service` and tvask
 - Settings, the system UI, the keyboard, Bluetooth and the package installer
 - Google Play services, the Play Store and `com.google.android.webview`
@@ -63,7 +63,7 @@ Ask before you restart the TV with `adb reboot`, then check that the home screen
 On the TCL, 28 packages are off.
 Among them are TCL's analytics, promotions, messages, game bar, media center, Alexa and Miracast apps, Google's auto installs and Play Games, and two streaming apps that came with the TV.
 
-## Lighter home screen
+## The home screen is heavy
 
 The Google TV home screen loads rows of recommendations and uses a lot of memory.
 A simple launcher is lighter. We use Projectivy Launcher from the Play Store.
@@ -83,9 +83,9 @@ Undo with `pm enable` for both packages.
 
 Some remote keys belong to the stock home.
 On the TCL, the Netflix, YouTube, Prime Video and Settings keys stopped working.
-"Remote keys that do nothing" brings them back.
+"Remote keys do nothing" brings them back.
 
-## Remote keys that do nothing
+## Remote keys do nothing
 
 tvkeys gives spare keys a new job, for example opening an app.
 It reads the remote at the Linux input level. It needs no root and adds no lag.
@@ -95,25 +95,6 @@ Find the codes of the spare keys with `tvkeys learn`, then write `keys.conf` wit
 Map only keys that do nothing now. A key that already opens something would open both.
 
 On the TCL, tvkeys runs the Netflix, YouTube, Prime Video, Settings and Media keys.
-
-## The mic key does nothing
-
-Most often the remote talks to the TV by infrared only.
-Then the keys work, but voice cannot reach the TV.
-
-```
-adb shell dumpsys bluetooth_manager | grep -iE 'Bonded devices' -A10
-adb shell getevent -pl | grep 'name:'
-```
-
-The remote must be in the bonded list, and its name must show up in the `getevent` list.
-If it is bonded but missing from `getevent`, it is not connected.
-Ask the person to remove the remote and pair it again: Settings, Remotes and accessories, then the button combination shown on screen.
-
-Then ask the person to press the mic key. The assistant should open and listen.
-Some remotes send other key codes over Bluetooth than by infrared, so check tvkeys mappings afterwards.
-
-The TCL's remote was bonded but never connected. Pairing it again fixed voice.
 
 ## Show an iPhone on the TV
 

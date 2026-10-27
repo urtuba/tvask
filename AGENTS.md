@@ -211,7 +211,7 @@ Send back fixes that help every TV as a pull request.
 
 ## More fixes for the TV
 
-[TUNEUP.md](TUNEUP.md) covers a slow TV, a lighter home screen, remote keys that do nothing, a mic key that does nothing, and showing an iPhone on the TV.
+[TUNEUP.md](TUNEUP.md) covers a slow TV, a heavy home screen, remote keys that do nothing, and showing an iPhone on the TV.
 Mention it at the end if the person complains about one of these.
 
 ## Undo

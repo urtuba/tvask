@@ -27,7 +27,7 @@ a:hover{text-decoration-color:var(--lamp)}
 :focus-visible{outline:2px solid var(--lamp);outline-offset:3px}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 h1,h2,h3{font-weight:760;letter-spacing:-.025em;margin:0}
-h2{font-size:clamp(30px,4vw,44px);line-height:1.05}
+h2{font-size:clamp(30px,4vw,44px);line-height:1.05;text-wrap:balance}
 h3{font-size:19px;letter-spacing:-.01em}
 p{margin:0}
 .sub{color:var(--dim);font-size:19px;max-width:62ch;margin-top:14px}
@@ -107,10 +107,20 @@ pre,code{font-family:var(--mono)}
 .lang{margin-top:16px}
 
 /* settings */
-.ontv{display:grid;grid-template-columns:1fr 1.3fr;gap:40px;align-items:center}
-.shot{margin:0}
-.ontv img{width:100%;border-radius:6px;border:1px solid var(--line);display:block}
-.shot figcaption{margin-top:10px}
+.ontv{display:grid;grid-template-columns:1fr 1.6fr;gap:48px;align-items:start}
+.ontv .lead{position:sticky;top:32px}
+.settings{width:100%;border-collapse:collapse}
+.settings th,.settings td{text-align:left;vertical-align:top;padding:12px 0;border-top:1px solid var(--line)}
+.settings th[scope=row]{font-weight:600;width:44%;padding-right:20px}
+.settings th small{display:block;font-weight:400;font-size:14px;color:var(--dim);margin-top:2px}
+.settings th small q{color:inherit}
+.settings th[scope=rowgroup]{padding:34px 0 10px;border-top:0;font-size:14px;font-weight:600;color:var(--dim)}
+.settings tbody:first-child th[scope=rowgroup]{padding-top:4px}
+.settings td{padding-top:8px;padding-bottom:6px;font-size:15px}
+.settings td span{display:inline-block;margin:0 4px 6px 0;padding:3px 9px;border:1px solid transparent;border-radius:3px;color:#e2d8cb;font-variant-numeric:tabular-nums}
+.settings td .def{border-color:#8a7c6d;color:var(--text)}
+.settings td .any{padding-left:0;padding-right:0;color:var(--dim)}
+.settings td .def+.any{margin-left:6px}
 
 /* tune-up */
 .fixes{margin-top:36px}
@@ -132,6 +142,8 @@ footer.wrap{margin-top:110px;padding-top:24px;padding-bottom:48px;border-top:1px
   .hero{gap:24px;padding-top:32px}
   .does{grid-template-columns:repeat(3,1fr);row-gap:20px}
   .phrases div{grid-template-columns:1fr;gap:8px}
+  .ontv{gap:28px}
+  .ontv .lead{position:static}
 }
 @media (max-width:640px){
   .wrap{padding-left:16px;padding-right:16px}
@@ -146,6 +158,9 @@ footer.wrap{margin-top:110px;padding-top:24px;padding-bottom:48px;border-top:1px
   section.wrap{padding-top:88px}
   .pbox{padding:14px}
   .pbox .btn{position:static;display:flex;width:max-content;margin-top:10px}
+  .settings,.settings tbody,.settings tr,.settings th,.settings td{display:block}
+  .settings th[scope=row]{width:auto;padding-right:0;padding-bottom:2px}
+  .settings td{border-top:0;padding-top:4px}
 }
 @media (prefers-reduced-motion:reduce){
   html{scroll-behavior:auto}
@@ -246,22 +261,46 @@ footer.wrap{margin-top:110px;padding-top:24px;padding-bottom:48px;border-top:1px
 <section class="wrap">
 <h2>Talk to it like a person</h2>
 <dl class="phrases">
-<div><dt>Ask and search</dt><dd><q>Will it rain this weekend?</q><q>Is GitHub down?</q><q>What was the Beşiktaş score?</q></dd></div>
-<div><dt>Find something to watch</dt><dd><q>Play Barış Manço on YouTube</q><q>Search Prime Video for The Boys</q><q>Open YouTube Music</q></dd></div>
+<div><dt>Ask and search</dt><dd><q>Will it rain this weekend?</q><q>Is GitHub down?</q><q>Who won the Champions League final?</q></dd></div>
+<div><dt>Find something to watch</dt><dd><q>Play some jazz on YouTube</q><q>Search Prime Video for The Boys</q><q>Open YouTube Music</q></dd></div>
 <div><dt>Browse on the TV</dt><dd><q>Show me some news sites in English</q><q>What's on the front page of bbc.com?</q></dd></div>
 <div><dt>Run the TV</dt><dd><q>Which apps are open?</q><q>Close them all</q><q>How much storage is left?</q></dd></div>
-<div><dt>Keep talking</dt><dd><q>And on Saturday?</q><q>Remember that I live in Istanbul</q></dd></div>
+<div><dt>Keep talking</dt><dd><q>And on Saturday?</q><q>Remember that I like short answers</q></dd></div>
 <div><dt>Know what's on</dt><dd><q>What am I watching?</q><q>Who plays in this?</q></dd></div>
 </dl>
 <p class="fine lang">It answers in the language you speak, and shows cards for the weather, scores, sites, open apps and memory. Google's recognizer on the TV hears your TV's language best.</p>
 </section>
 
-<section class="wrap ontv">
-<div>
+<section id="settings" class="wrap ontv">
+<div class="lead">
 <h2>Settings live on the TV</h2>
-<p class="sub">Reading speed, the wait after you pause, the browser, the screen language and the memory size. Change them with the remote, or say <q style="color:var(--lamp)">open tvask settings</q>.</p>
+<p class="sub">Open tvask from the app list, or say <q style="color:var(--lamp)">open tvask settings</q>. Left and right on the remote change a value, and it saves at once.</p>
+<p class="fine" style="margin-top:14px">Defaults are outlined.</p>
 </div>
-<figure class="shot"><img src="img/settings.png" alt="The tvask settings screen on a TV, in Turkish" loading="lazy"><figcaption class="fine">The settings screen on a Turkish TV. tvask's own texts come in English and Turkish.</figcaption></figure>
+<table class="settings">
+<tbody>
+<tr><th colspan="2" scope="rowgroup">Reading and listening</th></tr>
+<tr><th scope="row">Reading speed<small>Play a sample to hear it.</small></th><td><span>1.0×</span><span>1.1×</span><span class="def">1.25×</span><span>1.4×</span><span>1.6×</span><span>1.8×</span></td></tr>
+<tr><th scope="row">Wait for more after a pause<small>Keeps listening, so you can go on.</small></th><td><span>Off</span><span>1 s</span><span>1.5 s</span><span class="def">2 s</span><span>2.5 s</span><span>3 s</span></td></tr>
+</tbody>
+<tbody>
+<tr><th colspan="2" scope="rowgroup">Browser and language</th></tr>
+<tr><th scope="row">Browser</th><td><span class="def">Automatic</span><span class="any">or any browser on the TV</span></td></tr>
+<tr><th scope="row">Screen language<small>Answers follow the language you speak.</small></th><td><span class="def">TV language</span><span>English</span><span>Turkish</span></td></tr>
+</tbody>
+<tbody>
+<tr><th colspan="2" scope="rowgroup">Memory and context</th></tr>
+<tr><th scope="row">Memory size<small>Notes it keeps about you, on the TV.</small></th><td><span>Off</span><span class="def">1 MB</span><span>2 MB</span><span>5 MB</span><span>10 MB</span></td></tr>
+<tr><th scope="row">Use what is playing and on screen<small>For questions like <q>what am I watching?</q> Never a screenshot.</small></th><td><span class="def">On</span><span>Off</span></td></tr>
+<tr><th scope="row">Clear memory</th><td><span class="any">Press OK twice. It shows how much is used.</span></td></tr>
+</tbody>
+<tbody>
+<tr><th colspan="2" scope="rowgroup">Set by your agent over adb</th></tr>
+<tr><th scope="row">Model API</th><td><span class="def">DeepSeek</span><span class="any">or any OpenAI compatible API</span></td></tr>
+<tr><th scope="row">Model</th><td><span class="def">deepseek-flash</span><span class="any">or any model on that API</span></td></tr>
+<tr><th scope="row">API keys<small>One for the model, one for Brave Search.</small></th><td><span class="any">They stay on the TV. The screen only says whether they are set.</span></td></tr>
+</tbody>
+</table>
 </section>
 
 <section id="tune" class="wrap">
@@ -270,22 +309,17 @@ footer.wrap{margin-top:110px;padding-top:24px;padding-bottom:48px;border-top:1px
 <div class="fixes">
 <article class="fix"><div><h3>The TV feels slow</h3><p>Finds what eats memory, turns off apps you never use, and makes menus quicker. Everything can be undone.</p><span class="done">Our 2 GB TCL runs with 28 apps off</span></div>
 <div class="pbox"><code>My Android TV feels slow.
-Follow "Slow TV" in
+Follow "The TV feels slow" in
 https://raw.githubusercontent.com/urtuba/tvask/main/TUNEUP.md
 and ask me before every change.</code><button class="btn main" type="button">Copy</button></div></article>
 <article class="fix"><div><h3>The home screen is heavy</h3><p>Moves you to a light launcher without ads, and only removes the old one once the new one works.</p><span class="done">We use Projectivy Launcher</span></div>
 <div class="pbox"><code>Move my Android TV to a lighter home screen.
-Follow "Lighter home screen" in
+Follow "The home screen is heavy" in
 https://raw.githubusercontent.com/urtuba/tvask/main/TUNEUP.md
 and ask me before every change.</code><button class="btn main" type="button">Copy</button></div></article>
 <article class="fix"><div><h3>Remote keys do nothing</h3><p>Gives dead keys a new job with <a href="https://github.com/urtuba/tvkeys">tvkeys</a>, for example opening your favorite app. No root, no lag.</p><span class="done">Five keys on our remote</span></div>
 <div class="pbox"><code>Some keys on my TV remote do nothing.
-Follow "Remote keys that do nothing" in
-https://raw.githubusercontent.com/urtuba/tvask/main/TUNEUP.md
-and ask me before every change.</code><button class="btn main" type="button">Copy</button></div></article>
-<article class="fix"><div><h3>The mic key does nothing</h3><p>Checks whether the remote is really connected over Bluetooth, and walks you through pairing it again.</p><span class="done">Our remote was paired but never connected</span></div>
-<div class="pbox"><code>The mic key on my TV remote does nothing.
-Follow "The mic key does nothing" in
+Follow "Remote keys do nothing" in
 https://raw.githubusercontent.com/urtuba/tvask/main/TUNEUP.md
 and ask me before every change.</code><button class="btn main" type="button">Copy</button></div></article>
 <article class="fix"><div><h3>Show an iPhone on the TV</h3><p>Turns the TV into an AirPlay receiver. Screen and sound, upright or sideways, no app on the phone.</p><span class="done">On the Media key of our remote</span></div>

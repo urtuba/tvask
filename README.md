@@ -73,13 +73,13 @@ Send back fixes that help every TV as a pull request, and tell us about your TV 
 ## Tune up the TV
 
 The same agent can fix what makes Android TVs annoying.
-[TUNEUP.md](TUNEUP.md) has short guides for a slow TV, a lighter home screen, remote keys that do nothing, a mic key that does nothing, and showing an iPhone on the TV.
+[TUNEUP.md](TUNEUP.md) has short guides for a slow TV, a heavy home screen, remote keys that do nothing, and showing an iPhone on the TV.
 All of them worked on the tested TCL.
 Tell your agent the problem and point it to the part:
 
 ```
 My Android TV feels slow.
-Follow "Slow TV" in
+Follow "The TV feels slow" in
 https://raw.githubusercontent.com/urtuba/tvask/main/TUNEUP.md
 and ask me before every change.
 ```

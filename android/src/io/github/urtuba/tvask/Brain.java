@@ -25,8 +25,12 @@ final class Brain {
 
         // onAction runs after an app was opened. kind is OPENED, SEARCHED,
         // or NO_SEARCH when the user asked to search in an app that has no
-        // search link.
-        void onAction(String log, String app, int kind);
+        // search link. detail is the search query or the page's host.
+        void onAction(String log, String pkg, String app, int kind, String detail);
+
+        // onCard hands over card data: Weather.Forecast, Device.Status,
+        // Cards.AppList, Cards.SiteList or Cards.Score.
+        void onCard(Object card);
 
         void onFailure(String message);
     }
@@ -71,7 +75,9 @@ final class Brain {
                 }
                 msgs.put(m);
                 String acted = null;
+                String pkg = null;
                 String app = null;
+                String detail = null;
                 int kind = OPENED;
                 // direct is a device result that tvask shows as is,
                 // without asking the model again.
@@ -88,7 +94,13 @@ final class Brain {
                         result = search.search(args.optString("query"));
                     } else if (name.equals("weather")) {
                         l.onStatus(R.string.weather);
-                        result = Weather.forecast(args.optString("place"));
+                        Weather.Forecast f = Weather.forecast(args.optString("place"));
+                        if (f == null) {
+                            result = "Place not found: " + args.optString("place");
+                        } else {
+                            result = f.text();
+                            l.onCard(f);
+                        }
                     } else if (name.equals("read_page")) {
                         l.onStatus(R.string.reading);
                         result = Web.read(args.optString("url"));
@@ -96,7 +108,7 @@ final class Brain {
                         l.onStatus(R.string.checking);
                         result = Web.check(args.optString("url"));
                     } else if (name.equals("open_app")) {
-                        String pkg = args.optString("package");
+                        pkg = args.optString("package");
                         result = actions.open(pkg) ? "Opened." : "App not found.";
                         acted = "open_app " + pkg;
                         app = actions.label(pkg);
@@ -104,11 +116,13 @@ final class Brain {
                         String url = args.optString("url");
                         result = actions.openUrl(url) ? "Opened." : "Cannot open this link.";
                         acted = "open_url " + url;
-                        String browser = actions.browser();
-                        app = browser == null ? "browser" : actions.label(browser);
+                        pkg = actions.browser();
+                        app = pkg == null ? "browser" : actions.label(pkg);
+                        detail = android.net.Uri.parse(url).getHost();
                     } else if (name.equals("search_in_app")) {
-                        String pkg = args.optString("package");
+                        pkg = args.optString("package");
                         String q = args.optString("query");
+                        detail = q;
                         if (actions.canSearch(pkg)) {
                             actions.searchIn(pkg, q);
                             result = "Opened the search page.";
@@ -120,7 +134,15 @@ final class Brain {
                         acted = "search_in_app " + pkg + " " + q;
                         app = actions.label(pkg);
                     } else if (name.equals("list_apps")) {
-                        result = device.openAppsText();
+                        if (device.canSeeApps()) {
+                            List<String> open = device.openApps();
+                            result = device.openAppsText(open);
+                            if (!open.isEmpty()) {
+                                l.onCard(new Cards.AppList(open));
+                            }
+                        } else {
+                            result = device.openAppsText();
+                        }
                         direct = result;
                     } else if (name.equals("close_apps")) {
                         List<String> pkgs = new ArrayList<>();
@@ -131,8 +153,18 @@ final class Brain {
                         result = device.close(pkgs, args.optBoolean("all"));
                         direct = result;
                     } else if (name.equals("system_status")) {
-                        result = device.statusText();
+                        Device.Status st = device.status();
+                        result = device.statusText(st);
+                        l.onCard(st);
                         direct = result;
+                    } else if (name.equals("show_sites")) {
+                        l.onCard(sites(args));
+                        result = "Shown.";
+                        direct = args.optString("say");
+                    } else if (name.equals("show_score")) {
+                        l.onCard(score(args));
+                        result = "Shown.";
+                        direct = args.optString("say");
                     } else {
                         result = "Unknown tool.";
                     }
@@ -145,7 +177,7 @@ final class Brain {
                 }
                 if (acted != null) {
                     Conversation.add(turn);
-                    l.onAction(acted, app, kind);
+                    l.onAction(acted, pkg, app, kind, detail);
                     return;
                 }
                 if (direct != null) {
@@ -178,6 +210,9 @@ final class Brain {
                 .append("Call web_search for news, scores, prices, or anything you are not sure about.\n")
                 .append("web_search gives short snippets. If they do not hold the answer, call read_page on the best result.\n")
                 .append("To check whether a website works, call check_site.\n")
+                .append("When the user wants a site and several sites fit, call show_sites with up to 3 options and a short question in say. If one site clearly fits, call open_url.\n")
+                .append("For a sports match result, find it first, then call show_score with the details and a one or two sentence summary in say.\n")
+                .append("list_apps, close_apps, system_status, show_sites and show_score show their result on screen and end the turn.\n")
                 .append("Otherwise answer directly.\n")
                 .append("Your answer is shown on the TV and read aloud.\n")
                 .append("Reply in the language of the request, in one language only, in at most 3 short sentences.\n")
@@ -257,7 +292,32 @@ final class Brain {
                                                 .put("description", "True to close all open apps.")))
                                 .put("required", new JSONArray()))))
                 .put(tool("system_status", "Show the TV's memory, storage and uptime to the user.",
-                        new JSONObject()));
+                        new JSONObject()))
+                .put(fn("show_sites", "Show up to 3 numbered site options. The user picks one by number or with the remote.",
+                        new JSONObject()
+                                .put("sites", new JSONObject().put("type", "array").put("items", new JSONObject()
+                                        .put("type", "object")
+                                        .put("properties", new JSONObject()
+                                                .put("title", prop("Site name.", null))
+                                                .put("url", prop("Full https link.", null))
+                                                .put("note", prop("A few words on what is there.", null)))
+                                        .put("required", new JSONArray().put("title").put("url"))))
+                                .put("say", prop("Short question to read aloud, in the user's language.", null)),
+                        "sites", "say"))
+                .put(fn("show_score", "Show a match result card.",
+                        new JSONObject()
+                                .put("home", prop("Home team.", null))
+                                .put("away", prop("Away team.", null))
+                                .put("home_goals", new JSONObject().put("type", "integer"))
+                                .put("away_goals", new JSONObject().put("type", "integer"))
+                                .put("competition", prop("League or cup.", null))
+                                .put("date", prop("Match date, short, in the user's language.", null))
+                                .put("venue", prop("Stadium.", null))
+                                .put("home_scorers", strings("Home goals, like \"Osimhen 29'\"."))
+                                .put("away_scorers", strings("Away goals, like \"Szymanski 62'\"."))
+                                .put("note", prop("Optional short extra, like the man of the match.", null))
+                                .put("say", prop("One or two sentence summary to read aloud, in the user's language.", null)),
+                        "home", "away", "home_goals", "away_goals", "say"));
     }
 
     private static JSONObject tool(String name, String desc, JSONObject props) throws JSONException {
@@ -272,6 +332,64 @@ final class Brain {
                         .put("type", "object")
                         .put("properties", props)
                         .put("required", required)));
+    }
+
+    // fn is a tool with only the given properties required.
+    private static JSONObject fn(String name, String desc, JSONObject props, String... required)
+            throws JSONException {
+        JSONArray req = new JSONArray();
+        for (String r : required) {
+            req.put(r);
+        }
+        return new JSONObject().put("type", "function").put("function", new JSONObject()
+                .put("name", name)
+                .put("description", desc)
+                .put("parameters", new JSONObject()
+                        .put("type", "object")
+                        .put("properties", props)
+                        .put("required", req)));
+    }
+
+    private static JSONObject strings(String desc) throws JSONException {
+        return new JSONObject().put("type", "array").put("description", desc)
+                .put("items", new JSONObject().put("type", "string"));
+    }
+
+    private static Cards.SiteList sites(JSONObject args) throws JSONException {
+        Cards.SiteList out = new Cards.SiteList();
+        JSONArray a = args.optJSONArray("sites");
+        for (int i = 0; a != null && i < a.length() && i < 3; i++) {
+            JSONObject x = a.getJSONObject(i);
+            Cards.Site s = new Cards.Site();
+            s.title = x.optString("title");
+            s.url = x.optString("url");
+            s.note = x.optString("note");
+            out.sites.add(s);
+        }
+        return out;
+    }
+
+    private static Cards.Score score(JSONObject args) {
+        Cards.Score s = new Cards.Score();
+        s.home = args.optString("home");
+        s.away = args.optString("away");
+        s.homeGoals = args.optInt("home_goals");
+        s.awayGoals = args.optInt("away_goals");
+        s.competition = args.optString("competition");
+        s.date = args.optString("date");
+        s.venue = args.optString("venue");
+        s.note = args.optString("note");
+        s.homeScorers = list(args.optJSONArray("home_scorers"));
+        s.awayScorers = list(args.optJSONArray("away_scorers"));
+        return s;
+    }
+
+    private static List<String> list(JSONArray a) {
+        List<String> out = new ArrayList<>();
+        for (int i = 0; a != null && i < a.length(); i++) {
+            out.add(a.optString(i));
+        }
+        return out;
     }
 
     private static JSONObject prop(String desc, JSONArray values) throws JSONException {

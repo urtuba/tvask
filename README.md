@@ -20,6 +20,11 @@ Status: early. It answers questions, searches the web, opens apps and searches i
 5. tvask shows the answer and reads it aloud.
    For an app or a page, it says what it opens and fades out.
 
+Some answers come with a card under the text:
+weather with a five day strip, site options to pick by number or with OK,
+a match score, open apps with their icons, memory and storage bars,
+and the app's banner while it opens.
+
 After a short pause tvask keeps listening for two more seconds, so you can go on.
 It remembers the last six turns for five minutes, so follow-up questions work.
 
@@ -94,6 +99,7 @@ An empty value goes back to the default.
 | `chat_model` | `deepseek-flash` | Model name |
 | `chat_effort` | `low` | Sent as `reasoning_effort`. Low keeps answers fast. |
 | `browser` | first browser found | Package name of the browser, for example `com.phlox.tvwebbrowser` |
+| `speech_rate` | `1.25` | Reading speed. 1 is the voice's normal speed. |
 
 Check what is set. Keys show only their length:
 

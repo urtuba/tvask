@@ -5,6 +5,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.graphics.drawable.GradientDrawable;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -49,6 +50,10 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     private View card;
     private LevelMeter meter;
     private TextView past, state, words, answer;
+    // slot holds the card under the answer. picking is true while site
+    // options wait for a choice.
+    private LinearLayout slot;
+    private boolean picking;
     private SpeechRecognizer sr;
     private Intent listen;
     private TextToSpeech tts;
@@ -99,6 +104,12 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
             @Override
             public void onInit(int status) {
                 ttsReady = status == TextToSpeech.SUCCESS;
+                // A short silence loads the voice while the user speaks.
+                // Otherwise the first answer after a cold start waits for it.
+                if (ttsReady) {
+                    tts.setLanguage(Locale.getDefault());
+                    tts.playSilentUtterance(50, TextToSpeech.QUEUE_FLUSH, "warmup");
+                }
             }
         });
         tts.setOnUtteranceProgressListener(new UtteranceProgressListener() {
@@ -164,6 +175,10 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         box.addView(meter, mp);
         box.addView(words);
         box.addView(answer);
+        slot = new LinearLayout(getContext());
+        slot.setOrientation(LinearLayout.VERTICAL);
+        slot.setPadding(0, 16, 0, 0);
+        box.addView(slot);
         FrameLayout root = new FrameLayout(getContext());
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP);
@@ -190,6 +205,9 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         state.setText(R.string.listening);
         line(words, "");
         line(answer, "");
+        slot.removeAllViews();
+        slot.setVisibility(View.GONE);
+        picking = false;
         showPast();
         last = "";
         parts.clear();
@@ -420,7 +438,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
                     @Override
                     public void run() {
                         Conversation.show(said(""), text);
-                        reply(text, 5000);
+                        reply(text, picking ? 15000 : 5000);
                     }
                 });
             }
@@ -428,7 +446,8 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
             // The app starts behind the panel. tvask says what it does and
             // fades out once it has said it.
             @Override
-            public void onAction(String log, final String app, final int kind) {
+            public void onAction(String log, final String pkg, final String app, final int kind,
+                    final String detail) {
                 save("ACTION\t" + ms(start) + "\t" + log);
                 post(myTurn, new Runnable() {
                     @Override
@@ -442,7 +461,17 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
                         int note = kind == Brain.SEARCHED ? R.string.searched : R.string.opened;
                         Conversation.show(said(""), getContext().getString(note, app));
                         int now = kind == Brain.SEARCHED ? R.string.searching_in : R.string.opening;
-                        reply(getContext().getString(now, app), 300);
+                        opening(pkg, getContext().getString(now, app), detail);
+                    }
+                });
+            }
+
+            @Override
+            public void onCard(final Object card) {
+                post(myTurn, new Runnable() {
+                    @Override
+                    public void run() {
+                        showCard(card);
                     }
                 });
             }
@@ -491,17 +520,80 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         answer.setAlpha(0f);
         line(answer, text);
         answer.animate().alpha(1f).setDuration(200).start();
+        say(text, after);
+    }
+
+    // say reads text aloud and closes the panel after milliseconds past the
+    // end of the reading.
+    private void say(String text, long after) {
         if (!ttsReady || text.isEmpty()) {
             hideLater(after + 80L * text.length());
             return;
         }
         // A Turkish letter means Turkish. Otherwise read it as English.
         tts.setLanguage(text.matches("(?s).*[çğıöşüÇĞİÖŞÜ].*") ? TURKISH : Locale.US);
+        tts.setSpeechRate(new Config(getContext()).speechRate);
         utterance = "u" + SystemClock.elapsedRealtime();
         afterSpeech = after;
         tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, utterance);
         // In case the TTS never reports the end.
         hideLater(after + 20000 + 100L * text.length());
+    }
+
+    // opening shows the app's opening card, says it, and fades out.
+    private void opening(String pkg, String text, String detail) {
+        state.setText("");
+        line(answer, "");
+        if (pkg != null) {
+            put(Cards.opening(getContext(), pkg, text, detail));
+        }
+        say(text, 300);
+    }
+
+    // showCard draws card data from the brain under the answer.
+    private void showCard(Object card) {
+        Context c = getContext();
+        if (card instanceof Weather.Forecast) {
+            put(Cards.weather(c, (Weather.Forecast) card));
+        } else if (card instanceof Device.Status) {
+            put(Cards.status(c, (Device.Status) card));
+        } else if (card instanceof Cards.AppList) {
+            put(Cards.apps(c, (Cards.AppList) card));
+        } else if (card instanceof Cards.Score) {
+            put(Cards.score(c, (Cards.Score) card));
+        } else if (card instanceof Cards.SiteList) {
+            ViewGroup v = (ViewGroup) Cards.sites(c, ((Cards.SiteList) card).sites, new Cards.Pick() {
+                @Override
+                public void open(Cards.Site s) {
+                    pick(s);
+                }
+            });
+            put(v);
+            picking = true;
+            if (v.getChildCount() > 0) {
+                v.getChildAt(0).requestFocus();
+            }
+        }
+    }
+
+    // pick opens the site the user chose with the remote.
+    private void pick(Cards.Site s) {
+        Actions a = new Actions(getContext(), new Config(getContext()).browser);
+        save("PICK\t" + s.url);
+        picking = false;
+        if (!a.openUrl(s.url)) {
+            return;
+        }
+        Conversation.show(said(""), getContext().getString(R.string.opened, s.title));
+        opening(a.browser(), getContext().getString(R.string.opening, s.title), Uri.parse(s.url).getHost());
+    }
+
+    private void put(View v) {
+        slot.removeAllViews();
+        slot.addView(v);
+        slot.setVisibility(View.VISIBLE);
+        v.setAlpha(0f);
+        v.animate().alpha(1f).setDuration(200).start();
     }
 
     // save appends a line to files/transcripts.txt in the app's external

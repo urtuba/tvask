@@ -80,7 +80,10 @@ final class Device {
         if (!canSeeApps()) {
             return c.getString(R.string.need_usage);
         }
-        List<String> open = openApps();
+        return openAppsText(openApps());
+    }
+
+    String openAppsText(List<String> open) {
         if (open.isEmpty()) {
             return c.getString(R.string.no_open_apps);
         }
@@ -115,21 +118,34 @@ final class Device {
         return c.getString(R.string.closed, TextUtils.join(", ", labels(pkgs)));
     }
 
-    // statusText describes memory, storage and uptime.
-    String statusText() {
+    // Status is memory, storage and uptime. It feeds the status card.
+    static final class Status {
+        long ramUsed, ramTotal, storeFree, storeTotal, upMinutes;
+    }
+
+    Status status() {
         ActivityManager am = c.getSystemService(ActivityManager.class);
         ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
         am.getMemoryInfo(mi);
-        long used = mi.totalMem - mi.availMem;
         StatFs fs = new StatFs(Environment.getDataDirectory().getPath());
-        long up = SystemClock.elapsedRealtime() / 60000;
+        Status s = new Status();
+        s.ramTotal = mi.totalMem;
+        s.ramUsed = mi.totalMem - mi.availMem;
+        s.storeFree = fs.getAvailableBytes();
+        s.storeTotal = fs.getTotalBytes();
+        s.upMinutes = SystemClock.elapsedRealtime() / 60000;
+        return s;
+    }
+
+    // statusText describes memory, storage and uptime.
+    String statusText(Status s) {
         return c.getString(R.string.status,
-                Formatter.formatShortFileSize(c, used),
-                Formatter.formatShortFileSize(c, mi.totalMem),
-                (int) (100 * used / mi.totalMem),
-                Formatter.formatShortFileSize(c, fs.getAvailableBytes()),
-                Formatter.formatShortFileSize(c, fs.getTotalBytes()),
-                (int) (up / (24 * 60)), (int) (up / 60 % 24));
+                Formatter.formatShortFileSize(c, s.ramUsed),
+                Formatter.formatShortFileSize(c, s.ramTotal),
+                (int) (100 * s.ramUsed / s.ramTotal),
+                Formatter.formatShortFileSize(c, s.storeFree),
+                Formatter.formatShortFileSize(c, s.storeTotal),
+                (int) (s.upMinutes / (24 * 60)), (int) (s.upMinutes / 60 % 24));
     }
 
     private List<String> labels(List<String> pkgs) {

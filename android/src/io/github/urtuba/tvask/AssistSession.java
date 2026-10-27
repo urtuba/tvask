@@ -61,6 +61,9 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     // more is true while tvask waits for the next part. spoke is true once
     // speech started in the current listen.
     private boolean more, spoke;
+    // Loudness stats of the current listen, for the log.
+    private float rmsSum, rmsMax;
+    private int rmsCount;
     private final Runnable noMore = new Runnable() {
         @Override
         public void run() {
@@ -183,6 +186,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         card.animate().alpha(1f).translationY(0f).setDuration(200).start();
         meter.setLevel(0f);
         meter.setVisibility(View.VISIBLE);
+        loudness();
         state.setText(R.string.listening);
         line(words, "");
         line(answer, "");
@@ -275,15 +279,31 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         state.setText(R.string.hearing);
     }
 
-    // Google's recognizer reports about -2 for silence and up to about 10
-    // for loud speech. Values below 1 are room noise and show nothing. The
-    // curve keeps normal speech in the middle of the meter.
+    // Google's recognizer reports about -2 for silence and tops out near 10.
+    // Normal speech from the remote measured 7 to 9, so the curve puts it in
+    // the middle of the meter and leaves the top for a loud voice. Values
+    // above 1 also go into the loudness stats in the log.
     @Override
     public void onRmsChanged(float rms) {
-        if (listening) {
-            float v = Math.max(0f, (rms - 1f) / 10f);
-            meter.setLevel((float) Math.pow(v, 1.4));
+        if (!listening) {
+            return;
         }
+        if (rms > 1f) {
+            rmsSum += rms;
+            rmsCount++;
+            rmsMax = Math.max(rmsMax, rms);
+        }
+        float v = Math.max(0f, Math.min(1f, (rms - 2f) / 8f));
+        meter.setLevel((float) Math.pow(v, 2.5));
+    }
+
+    private String loudness() {
+        String s = rmsCount == 0 ? "\trms none"
+                : String.format(Locale.US, "\trms avg %.1f max %.1f", rmsSum / rmsCount, rmsMax);
+        rmsSum = 0;
+        rmsMax = 0;
+        rmsCount = 0;
+        return s;
     }
 
     @Override
@@ -328,7 +348,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     public void onResults(Bundle r) {
         listening = false;
         List<String> heard = all(r);
-        save("HEARD " + (parts.size() + 1) + "\t" + join(heard));
+        save("HEARD " + (parts.size() + 1) + "\t" + join(heard) + loudness());
         if (!heard.isEmpty()) {
             parts.add(heard);
             line(words, said(""));

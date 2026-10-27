@@ -13,7 +13,7 @@ import android.view.View;
 final class LevelMeter extends View {
     private static final int MAX_BLOCKS = 48;
     private static final int BASE = 3;
-    private static final float RISE = 0.3f;
+    private static final float RISE = 0.15f;
     private static final float FALL = 0.07f;
 
     private final Paint on = new Paint(Paint.ANTI_ALIAS_FLAG);

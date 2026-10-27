@@ -24,21 +24,25 @@ adb shell getprop ro.build.version.release        # 11 or newer
 adb shell getprop ro.product.cpu.abilist
 adb shell pm list packages -e | grep com.google.android.katniss
 adb shell dumpsys bluetooth_manager | grep -iE 'Bonded devices' -A10
+adb shell getevent -pl | grep 'name:'
 ```
 
 What you need:
 
 - Android 11 or newer.
 - `com.google.android.katniss` installed and enabled. It is Google's TV search app, and tvask uses its speech recognizer.
-- A voice remote bonded over Bluetooth LE.
-  If the remote works only by IR, voice cannot reach the TV.
-  Ask the person to pair it again: Settings, Remotes and accessories, then the pairing combination shown on screen.
+- A voice remote bonded over Bluetooth LE, and connected: its name shows up in the `getevent` list.
+  A bonded remote can still talk to the TV only by IR, and then voice cannot reach the TV.
+  Ask the person to remove it and pair it again: Settings, Remotes and accessories, then the pairing combination shown on screen.
 
 If a check fails, stop and explain it. tvask will not work without these.
 
 ## 2. Install
 
 Use the APK from the latest GitHub release, or build it with `./build.sh`.
+Check its SHA-256 against the release notes.
+If another build of tvask is installed with a different signature, uninstall it first.
+That deletes its keys and memory notes, so you will send the keys again in step 4.
 
 ```
 adb install tvask.apk
@@ -46,8 +50,6 @@ adb shell pm grant io.github.urtuba.tvask android.permission.RECORD_AUDIO
 adb shell appops set io.github.urtuba.tvask GET_USAGE_STATS allow
 adb shell cmd notification allow_listener io.github.urtuba.tvask/.MediaListener
 adb shell settings put secure assist_screenshot_enabled 0
-adb shell settings put secure voice_interaction_service io.github.urtuba.tvask/.AssistService
-adb shell settings put secure assistant io.github.urtuba.tvask/.AssistService
 ```
 
 What each one is for:
@@ -56,7 +58,6 @@ What each one is for:
 - `GET_USAGE_STATS`: lets tvask list and close open apps.
 - The notification listener: lets tvask read what is playing. It reads no notifications.
 - `assist_screenshot_enabled 0`: Android would offer the assistant a screenshot. tvask never uses it, so turn it off.
-- The two `settings put` lines make tvask the default assistant, so the mic key opens it.
 
 ## 3. Look for vendor quirks
 
@@ -70,12 +71,25 @@ adb logcat -d | grep -iE 'kill.*tvask|forbid|block.*tvask' | tail
 
 Known cases:
 
-- TCL: a custom app-op blocks background starts. Run
+- TCL: a custom app-op blocks background starts.
+  `appops get` shows `APP_AUTO_START: ignore` with a reject time, and the log shows `forbid bind service` for tvask. Run
   `adb shell appops set io.github.urtuba.tvask APP_AUTO_START allow`.
   Its memory cleaner may still stop tvask when idle. Android starts it again on the next mic key press.
 - TCL: the window manager sends "close system dialogs" on key presses. tvask already ignores it.
 
 If you find a new quirk, tell the person and suggest a TV report as a GitHub issue.
+
+Now make tvask the default assistant.
+Do this after the quirks, so no start blocker stops Android from binding it:
+
+```
+adb shell settings put secure voice_interaction_service com.google.android.katniss/.search.serviceapi.KatnissVoiceInteractionService
+adb shell settings put secure voice_interaction_service io.github.urtuba.tvask/.AssistService
+adb shell settings put secure assistant io.github.urtuba.tvask/.AssistService
+```
+
+Setting `voice_interaction_service` to Google first makes Android bind tvask fresh, even when the value was already tvask.
+Changing it also resets `assistant`, so set `assistant` last.
 
 ## 4. Keys and settings
 
@@ -127,7 +141,8 @@ adb shell am broadcast -n io.github.urtuba.tvask/.ConfigReceiver \
 ```
 
 If it answers `not asked`, the assistant service is not bound yet.
-Run the two `settings put` lines from step 2 again, then retry.
+Run the three `settings put` lines at the end of step 3 again, then retry.
+This also happens after an update.
 
 Then ask the person to press the mic key on the remote and say "hello".
 Read the log:

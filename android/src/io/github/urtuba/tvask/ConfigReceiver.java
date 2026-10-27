@@ -28,6 +28,11 @@ public class ConfigReceiver extends BroadcastReceiver {
                 setResultData("unknown name: " + name);
                 return;
             }
+            // A key belongs to one server. When the server changes, the old
+            // key must not go to the new one.
+            if (name.equals("chat_url") && !String.valueOf(value).equals(p.getString(name, ""))) {
+                p.edit().remove("chat_key").commit();
+            }
             if (value == null || value.isEmpty()) {
                 p.edit().remove(name).commit();
                 setResultData("removed " + name);

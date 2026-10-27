@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 // Web fetches pages from the TV's own connection. check tells whether a
 // site answers. read returns a page as plain text for the model.
 final class Web {
-    private static final int MAX_BYTES = 1000000;
+    private static final int MAX_BYTES = 300000;
     private static final int MAX_TEXT = 6000;
     private static final String AGENT = "Mozilla/5.0 (Linux; Android 11; TV) tvask";
     private static final Pattern TITLE = Pattern.compile("<title[^>]*>(.*?)</title>",
@@ -63,7 +63,7 @@ final class Web {
                 sb.append("Title: ").append(plain(t.group(1))).append('\n');
             }
             if (withText) {
-                sb.append("Text:\n").append(Http.cut(text(html), MAX_TEXT));
+                sb.append("Text:\n").append(text(html));
             }
             return sb.toString();
         } catch (UnknownHostException e) {
@@ -91,13 +91,15 @@ final class Web {
         }
     }
 
-    // text drops scripts, styles and tags, and keeps one line per block.
+    // text drops scripts, styles and tags, keeps one line per block, and
+    // cuts the result to MAX_TEXT before decoding entities.
     private static String text(String html) {
         String s = html.replaceAll("(?is)<(script|style|noscript|svg|head)[^>]*>.*?</\\1>", " ")
                 .replaceAll("(?s)<!--.*?-->", " ")
                 .replaceAll("(?i)<(br|/p|/div|/li|/h[1-6]|/tr)[^>]*>", "\n")
                 .replaceAll("<[^>]+>", " ");
-        return plain(s).replaceAll("[ \\t\\x0B\\f\\r]+", " ").replaceAll("\\s*\\n\\s*", "\n").trim();
+        s = s.replaceAll("[ \\t\\x0B\\f\\r]+", " ").replaceAll("\\s*\\n\\s*", "\n").trim();
+        return plain(Http.cut(s, MAX_TEXT));
     }
 
     // plain decodes HTML entities.

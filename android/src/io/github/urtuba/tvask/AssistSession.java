@@ -18,6 +18,9 @@ import android.speech.tts.TextToSpeech;
 import android.speech.tts.UtteranceProgressListener;
 import android.util.Log;
 import android.view.Gravity;
+import android.view.textclassifier.TextClassificationManager;
+import android.view.textclassifier.TextClassifier;
+import android.view.textclassifier.TextLanguage;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.FrameLayout;
@@ -39,7 +42,6 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     static final String TAG = "tvask";
     static final ComponentName GOOGLE = new ComponentName("com.google.android.katniss",
             "com.google.android.apps.tvsearch.voice.recognition.KatnissRecognitionService");
-    private static final Locale TURKISH = new Locale("tr", "TR");
     // After a pause, tvask listens again for moreMs, so the user can go on.
     // It stops after MAX_PARTS stretches of speech. 0 turns this off.
     private static final int MAX_PARTS = 4;
@@ -85,6 +87,11 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     // turn grows on every show and hide, so late results from an old turn
     // are dropped.
     private int turn;
+    // screen is the text of the app in front, from Android's assist data.
+    private String screen = "";
+    // brain is the current turn's brain, cancelled when the panel moves on.
+    private Brain brain;
+    private static final long LOG_MAX = 256 * 1024;
     // utterance is the id of the text being spoken. When it ends, the panel
     // closes after afterSpeech milliseconds.
     private String utterance = "";
@@ -148,6 +155,9 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
 
     @Override
     public void onDestroy() {
+        if (sr != null) {
+            sr.destroy();
+        }
         tts.shutdown();
         super.onDestroy();
     }
@@ -204,6 +214,8 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         }
         moreMs = new Config(getContext()).listenMore;
         turn++;
+        cancelBrain();
+        screen = "";
         ui.removeCallbacksAndMessages(null);
         tts.stop();
         utterance = "";
@@ -268,6 +280,8 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
 
     @Override
     public void onHide() {
+        screen = "";
+        cancelBrain();
         turn++;
         listening = false;
         more = false;
@@ -360,7 +374,13 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
             return;
         }
         Log.i(TAG, "recognizer error " + e);
-        state.setText(lc.getString(R.string.error, e));
+        if (e == SpeechRecognizer.ERROR_NO_MATCH || e == SpeechRecognizer.ERROR_SPEECH_TIMEOUT) {
+            state.setText(R.string.err_nothing);
+        } else if (e == SpeechRecognizer.ERROR_NETWORK || e == SpeechRecognizer.ERROR_NETWORK_TIMEOUT) {
+            state.setText(R.string.fail_network);
+        } else {
+            state.setText(lc.getString(R.string.error, e));
+        }
         save("ERROR " + e + "\tlast partial: " + last);
         hideLater(5000);
     }
@@ -376,6 +396,9 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
 
     @Override
     public void onResults(Bundle r) {
+        if (!listening) {
+            return;
+        }
         listening = false;
         List<String> heard = all(r);
         save("HEARD " + (parts.size() + 1) + "\t" + join(heard) + loudness());
@@ -425,11 +448,39 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     public void onEvent(int type, Bundle p) {
     }
 
+    // Android hands the assistant the app in front as text and links when
+    // the mic key opens tvask. The screenshot it may also offer stays unused.
+    @Override
+    public void onHandleAssist(AssistState state) {
+        String s = TvContext.screen(getContext(), state.getAssistStructure(), state.getAssistContent());
+        // Index 0 starts a new set of activities, so older text goes.
+        if (state.getIndex() == 0) {
+            screen = s;
+        } else if (!s.isEmpty()) {
+            screen = screen.isEmpty() ? s : screen + "\n" + s;
+        }
+    }
+
+    private void cancelBrain() {
+        if (brain != null) {
+            brain.cancel();
+            brain = null;
+        }
+    }
+
     private void think(Config cfg, final List<List<String>> heard) {
-        final Brain brain = new Brain(
+        final Brain b = new Brain(
                 new OpenAIChat(cfg.chatUrl, cfg.chatKey, cfg.chatModel, cfg.chatEffort),
-                new BraveSearch(cfg.braveKey),
-                new Actions(lc, cfg.browser));
+                cfg.braveKey.isEmpty() ? null : new BraveSearch(cfg.braveKey),
+                new Actions(lc, cfg.browser),
+                new Memory(getContext(), cfg.memorySize));
+        brain = b;
+        String playing = cfg.tvContext ? TvContext.playing(getContext()) : "";
+        final String tv = cfg.tvContext ? (playing + "\n" + screen).trim() : "";
+        // The log keeps only the size of the context, not its text.
+        save("CONTEXT\tplaying " + !playing.isEmpty() + ", screen " + screen.length() + " chars");
+        // A safety net in case the turn never ends.
+        hideLater(120000);
         final int myTurn = turn;
         final long start = SystemClock.elapsedRealtime();
         final Brain.Listener l = new Brain.Listener() {
@@ -446,11 +497,12 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
             @Override
             public void onAnswer(final String text) {
                 save("ANSWER\t" + ms(start) + "\t" + text);
+                final Locale voice = language(text);
                 post(myTurn, new Runnable() {
                     @Override
                     public void run() {
                         Conversation.show(said(""), text);
-                        reply(text, picking ? 15000 : 5000);
+                        reply(text, picking ? 15000 : 5000, voice);
                     }
                 });
             }
@@ -467,7 +519,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
                         if (kind == Brain.NO_SEARCH) {
                             String text = lc.getString(R.string.no_app_search, app);
                             Conversation.show(said(""), text);
-                            reply(text, 3000);
+                            reply(text, 3000, null);
                             return;
                         }
                         int note = kind == Brain.SEARCHED ? R.string.searched : R.string.opened;
@@ -489,12 +541,12 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
             }
 
             @Override
-            public void onFailure(final String message) {
-                save("FAIL\t" + ms(start) + "\t" + message);
+            public void onFailure(final int text, String detail) {
+                save("FAIL\t" + ms(start) + "\t" + detail);
                 post(myTurn, new Runnable() {
                     @Override
                     public void run() {
-                        state.setText(lc.getString(R.string.failed, message));
+                        state.setText(text);
                         hideLater(8000);
                     }
                 });
@@ -503,7 +555,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         new Thread(new Runnable() {
             @Override
             public void run() {
-                brain.run(heard, l);
+                b.run(heard, tv, l);
             }
         }, "tvask-brain").start();
     }
@@ -520,6 +572,21 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         });
     }
 
+    // language guesses an answer's language on the device, for the voice.
+    // It runs on the brain thread, because the classifier may be slow.
+    private Locale language(String text) {
+        try {
+            TextClassifier tc = getContext().getSystemService(TextClassificationManager.class).getTextClassifier();
+            TextLanguage r = tc.detectLanguage(new TextLanguage.Request.Builder(text).build());
+            if (r.getLocaleHypothesisCount() > 0 && r.getConfidenceScore(r.getLocale(0)) > 0.5f) {
+                return r.getLocale(0).toLocale();
+            }
+        } catch (RuntimeException e) {
+            Log.w(TAG, "cannot detect language: " + e);
+        }
+        return null;
+    }
+
     private void hideLater(long delay) {
         ui.removeCallbacks(closeRun);
         ui.postDelayed(closeRun, delay);
@@ -527,23 +594,26 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
 
     // reply shows text, reads it aloud, and closes the panel after
     // the reading ends.
-    private void reply(String text, long after) {
+    private void reply(String text, long after, Locale voice) {
         state.setText("");
         answer.setAlpha(0f);
         line(answer, text);
         answer.animate().alpha(1f).setDuration(200).start();
-        say(text, after);
+        say(text, after, voice);
     }
 
-    // say reads text aloud and closes the panel after milliseconds past the
-    // end of the reading.
-    private void say(String text, long after) {
+    // say reads text aloud in the voice for the given language, or in the
+    // screen language if it is null, and closes the panel after milliseconds
+    // past the end of the reading.
+    private void say(String text, long after, Locale voice) {
         if (!ttsReady || text.isEmpty()) {
             hideLater(after + 80L * text.length());
             return;
         }
-        // A Turkish letter means Turkish. Otherwise read it as English.
-        tts.setLanguage(text.matches("(?s).*[çğıöşüÇĞİÖŞÜ].*") ? TURKISH : Locale.US);
+        Locale l = voice != null ? voice : lc.getResources().getConfiguration().getLocales().get(0);
+        if (tts.setLanguage(l) < TextToSpeech.LANG_AVAILABLE) {
+            tts.setLanguage(Locale.getDefault());
+        }
         tts.setSpeechRate(new Config(getContext()).speechRate);
         utterance = "u" + SystemClock.elapsedRealtime();
         afterSpeech = after;
@@ -559,7 +629,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         if (pkg != null) {
             put(Cards.opening(lc, pkg, text, detail));
         }
-        say(text, 300);
+        say(text, 300, null);
     }
 
     // showCard draws card data from the brain under the answer.
@@ -615,7 +685,11 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         if (dir == null) {
             return;
         }
-        try (FileWriter w = new FileWriter(new File(dir, "transcripts.txt"), true)) {
+        File log = new File(dir, "transcripts.txt");
+        if (log.length() > LOG_MAX) {
+            log.renameTo(new File(dir, "transcripts.old.txt"));
+        }
+        try (FileWriter w = new FileWriter(log, true)) {
             w.write(new Date() + "\t" + line + "\n");
         } catch (IOException e) {
             Log.w(TAG, "cannot save transcript: " + e);

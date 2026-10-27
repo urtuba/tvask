@@ -7,11 +7,12 @@ import android.content.SharedPreferences;
 // API keys live only in the app's private storage on the TV.
 final class Config {
     static final String[] NAMES = {"chat_url", "chat_model", "chat_effort", "chat_key", "brave_key", "browser",
-            "speech_rate", "listen_more", "ui_language"};
+            "speech_rate", "listen_more", "ui_language", "memory_size", "tv_context"};
 
     final String chatUrl, chatModel, chatEffort, chatKey, braveKey, browser;
     final float speechRate;
-    final long listenMore;
+    final long listenMore, memorySize;
+    final boolean tvContext;
 
     Config(Context c) {
         SharedPreferences p = prefs(c);
@@ -24,11 +25,16 @@ final class Config {
         browser = p.getString("browser", "");
         speechRate = number(p.getString("speech_rate", ""), 1.25f);
         listenMore = (long) number(p.getString("listen_more", ""), 2000);
+        memorySize = (long) number(p.getString("memory_size", ""), 1024 * 1024);
+        tvContext = !"off".equals(p.getString("tv_context", "on"));
     }
 
+    // number reads a setting as a number. Empty, broken or negative values
+    // fall back to def.
     private static float number(String s, float def) {
         try {
-            return s.isEmpty() ? def : Float.parseFloat(s);
+            float f = s.isEmpty() ? def : Float.parseFloat(s);
+            return f < 0 ? def : f;
         } catch (NumberFormatException e) {
             return def;
         }

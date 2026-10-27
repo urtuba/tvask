@@ -72,18 +72,24 @@ final class Actions {
     // browser returns the package of the TV's web browser, or null. The
     // preferred browser wins if it is installed.
     String browser() {
+        Map<String, String> all = browsers(pm);
+        if (all.containsKey(preferredBrowser)) {
+            return preferredBrowser;
+        }
+        return all.isEmpty() ? null : all.keySet().iterator().next();
+    }
+
+    // browsers returns the apps that open web links, as package name to label.
+    static Map<String, String> browsers(PackageManager pm) {
+        Map<String, String> out = new LinkedHashMap<>();
         Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com"));
-        String first = null;
         for (ResolveInfo r : pm.queryIntentActivities(i, 0)) {
             String pkg = r.activityInfo.packageName;
-            if (pkg.equals(preferredBrowser)) {
-                return pkg;
-            }
-            if (first == null && !pkg.equals(STUBS)) {
-                first = pkg;
+            if (!pkg.equals(STUBS) && !out.containsKey(pkg)) {
+                out.put(pkg, r.loadLabel(pm).toString());
             }
         }
-        return first;
+        return out;
     }
 
     // openUrl opens an http or https page in the browser. It returns false
@@ -101,10 +107,25 @@ final class Actions {
     }
 
     String label(String pkg) {
+        return label(c, pkg);
+    }
+
+    // label returns an app's name, or the package name if it is not installed.
+    static String label(Context c, String pkg) {
+        PackageManager pm = c.getPackageManager();
         try {
             return pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString();
         } catch (PackageManager.NameNotFoundException e) {
             return pkg;
+        }
+    }
+
+    boolean installed(String pkg) {
+        try {
+            pm.getApplicationInfo(pkg, 0);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
         }
     }
 

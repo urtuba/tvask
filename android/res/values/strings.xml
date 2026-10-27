@@ -14,7 +14,13 @@
     <string name="reading">Reading the page</string>
     <string name="checking">Checking the site</string>
     <string name="no_key">No AI key yet. Set one with adb, see the README.</string>
-    <string name="failed">Something went wrong: %1$s</string>
+    <string name="fail_network">Can\'t reach the internet.</string>
+    <string name="fail_key">The AI service rejected the key. Check it with adb.</string>
+    <string name="fail_balance">The AI service account has no balance left.</string>
+    <string name="fail_generic">Something went wrong. Try again.</string>
+    <string name="fail_rounds">No answer this time. Try asking another way.</string>
+    <string name="fail_slow">That took too long. Try again.</string>
+    <string name="err_nothing">Didn\'t catch that.</string>
     <string name="no_app_search">%1$s is open. Search in it with the remote.</string>
     <string name="you">You</string>
     <string name="opened">Opened %1$s.</string>
@@ -35,6 +41,12 @@
     <string name="set_seconds">%1$s s</string>
     <string name="set_keys_ok">API keys are set. Change them with adb, see the README.</string>
     <string name="set_keys_missing">An API key is missing. Set it with adb, see the README.</string>
+    <string name="settings_memory">Memory and context</string>
+    <string name="set_tv_context">Use what is playing and on screen</string>
+    <string name="set_on">On</string>
+    <string name="set_memory_size">Memory size</string>
+    <string name="set_memory_clear">Clear memory (%1$s used)</string>
+    <string name="set_memory_confirm">Press OK again to delete all notes</string>
     <string name="decimal" translatable="false">.</string>
     <string name="wx_now">%1$s · now</string>
     <string name="wx_detail">feels %1$d° · wind %2$d km/h</string>

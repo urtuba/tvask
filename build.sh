@@ -52,7 +52,8 @@ if [ -n "$DEBUG" ] && [ ! -f "$KEYSTORE" ]; then
 		-alias androiddebugkey -keyalg RSA -keysize 2048 -validity 10000 \
 		-dname "CN=Android Debug,O=Android,C=US"
 fi
-"$TOOLS/apksigner" sign --ks "$KEYSTORE" --ks-key-alias "$ALIAS" --ks-pass "pass:$PASS" \
+export SIGN_PASS="$PASS"
+"$TOOLS/apksigner" sign --ks "$KEYSTORE" --ks-key-alias "$ALIAS" --ks-pass env:SIGN_PASS \
 	--out "$OUT/tvask.apk" "$OUT/aligned.apk"
 
 echo "built $OUT/tvask.apk"

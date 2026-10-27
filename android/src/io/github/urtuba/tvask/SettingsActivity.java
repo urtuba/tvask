@@ -2,24 +2,25 @@ package io.github.urtuba.tvask;
 
 import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.ResolveInfo;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
-import android.net.Uri;
 import android.os.Bundle;
 import android.speech.tts.TextToSpeech;
+import android.text.format.Formatter;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 // SettingsActivity lets the user change the basic settings with the remote.
 // Left and right, or OK, step through a row's values. Values save at once.
@@ -27,6 +28,7 @@ import java.util.Locale;
 public class SettingsActivity extends Activity {
     private static final String[] RATES = {"1.0", "1.1", "1.25", "1.4", "1.6", "1.8"};
     private static final String[] WAITS = {"0", "1000", "1500", "2000", "2500", "3000"};
+    private static final String[] SIZES = {"0", "1048576", "2097152", "5242880", "10485760"};
 
     // Row is one setting: its stored values and what the screen shows.
     private final class Row {
@@ -35,16 +37,27 @@ public class SettingsActivity extends Activity {
         TextView value;
         int index;
 
+        // A value set with adb that is not in the list joins it as the last
+        // option, so the row never shows a wrong label.
         Row(String name, String[] values, String[] labels, String def) {
             this.name = name;
-            this.values = values;
-            this.labels = labels;
             String now = prefs().getString(name, def);
+            int found = -1;
             for (int i = 0; i < values.length; i++) {
                 if (values[i].equals(now)) {
-                    index = i;
+                    found = i;
                 }
             }
+            if (found < 0) {
+                values = Arrays.copyOf(values, values.length + 1);
+                labels = Arrays.copyOf(labels, labels.length + 1);
+                values[values.length - 1] = now;
+                labels[labels.length - 1] = now;
+                found = values.length - 1;
+            }
+            this.values = values;
+            this.labels = labels;
+            index = found;
         }
 
         void step(int d) {
@@ -58,6 +71,7 @@ public class SettingsActivity extends Activity {
     }
 
     private TextToSpeech tts;
+    private boolean ttsReady;
 
     @Override
     protected void attachBaseContext(Context base) {
@@ -67,7 +81,12 @@ public class SettingsActivity extends Activity {
     @Override
     protected void onCreate(Bundle b) {
         super.onCreate(b);
-        tts = new TextToSpeech(this, null);
+        tts = new TextToSpeech(this, new TextToSpeech.OnInitListener() {
+            @Override
+            public void onInit(int status) {
+                ttsReady = status == TextToSpeech.SUCCESS;
+            }
+        });
         LinearLayout root = new LinearLayout(this);
         root.setOrientation(LinearLayout.VERTICAL);
         root.setPadding(96, 56, 96, 56);
@@ -84,6 +103,9 @@ public class SettingsActivity extends Activity {
         test.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                if (!ttsReady) {
+                    return;
+                }
                 tts.setSpeechRate(new Config(SettingsActivity.this).speechRate);
                 tts.speak(getString(R.string.set_sample), TextToSpeech.QUEUE_FLUSH, null, "test");
             }
@@ -99,12 +121,38 @@ public class SettingsActivity extends Activity {
         }
         add(root, R.string.set_language, new Row("ui_language", Locales.LANGUAGES, langs, ""));
 
+        root.addView(section(R.string.settings_memory));
+        add(root, R.string.set_memory_size, new Row("memory_size", SIZES, sizes(), "1048576"));
+        add(root, R.string.set_tv_context, new Row("tv_context", new String[] {"on", "off"},
+                new String[] {getString(R.string.set_on), getString(R.string.set_off)}, "on"));
+        final TextView clear = button(memoryLabel());
+        clear.setOnClickListener(new View.OnClickListener() {
+            private boolean asked;
+
+            @Override
+            public void onClick(View v) {
+                if (!asked) {
+                    asked = true;
+                    clear.setText(R.string.set_memory_confirm);
+                    return;
+                }
+                asked = false;
+                new Memory(SettingsActivity.this, 1).clear();
+                clear.setText(memoryLabel());
+            }
+        });
+        root.addView(clear, rowParams());
+
         Config cfg = new Config(this);
         TextView keys = text(getString(cfg.chatKey.isEmpty() || cfg.braveKey.isEmpty()
                 ? R.string.set_keys_missing : R.string.set_keys_ok), 14, Cards.MUTED);
         keys.setPadding(0, 32, 0, 0);
         root.addView(keys);
-        setContentView(root);
+        // The list is taller than the screen, so it scrolls with the focus.
+        ScrollView scroll = new ScrollView(this);
+        scroll.setBackgroundColor(Color.rgb(16, 16, 16));
+        scroll.addView(root);
+        setContentView(scroll);
     }
 
     @Override
@@ -186,6 +234,20 @@ public class SettingsActivity extends Activity {
         return out;
     }
 
+    private String[] sizes() {
+        String[] out = new String[SIZES.length];
+        for (int i = 0; i < out.length; i++) {
+            long b = Long.parseLong(SIZES[i]);
+            out[i] = b == 0 ? getString(R.string.set_off) : Formatter.formatShortFileSize(this, b);
+        }
+        return out;
+    }
+
+    private String memoryLabel() {
+        long used = new Memory(this, 1).used();
+        return getString(R.string.set_memory_clear, Formatter.formatShortFileSize(this, used));
+    }
+
     private String[] waits() {
         String[] out = new String[WAITS.length];
         for (int i = 0; i < out.length; i++) {
@@ -204,13 +266,9 @@ public class SettingsActivity extends Activity {
         List<String> labels = new ArrayList<>();
         values.add("");
         labels.add(getString(R.string.set_auto));
-        Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com"));
-        for (ResolveInfo r : getPackageManager().queryIntentActivities(i, 0)) {
-            String pkg = r.activityInfo.packageName;
-            if (!pkg.equals("com.google.android.tv.frameworkpackagestubs") && !values.contains(pkg)) {
-                values.add(pkg);
-                labels.add(r.loadLabel(getPackageManager()).toString());
-            }
+        for (Map.Entry<String, String> e : Actions.browsers(getPackageManager()).entrySet()) {
+            values.add(e.getKey());
+            labels.add(e.getValue());
         }
         return new String[][] {values.toArray(new String[0]), labels.toArray(new String[0])};
     }

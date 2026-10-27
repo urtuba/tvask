@@ -18,6 +18,7 @@ import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import java.text.NumberFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -47,6 +48,17 @@ final class Cards {
 
     static final class SiteList {
         final List<Site> sites = new ArrayList<>();
+
+        // summary lists the options for the conversation, so "the second one"
+        // works in the next turn.
+        String summary() {
+            StringBuilder sb = new StringBuilder("Site options shown:");
+            for (int i = 0; i < sites.size(); i++) {
+                sb.append(' ').append(i + 1).append(". ").append(sites.get(i).title)
+                        .append(" (").append(sites.get(i).url).append(')');
+            }
+            return sb.toString();
+        }
     }
 
     static final class AppList {
@@ -79,8 +91,10 @@ final class Cards {
         card.addView(top);
         LinearLayout days = row(c);
         days.setPadding(0, 16, 0, 0);
+        Locale ui = c.getResources().getConfiguration().getLocales().get(0);
         SimpleDateFormat in = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
-        SimpleDateFormat out = new SimpleDateFormat("EEE", Locale.getDefault());
+        SimpleDateFormat out = new SimpleDateFormat("EEE", ui);
+        NumberFormat percent = NumberFormat.getPercentInstance(ui);
         for (int i = 0; i < f.days.size() && i < DAYS; i++) {
             Weather.Day d = f.days.get(i);
             LinearLayout col = column(c);
@@ -94,7 +108,7 @@ final class Cards {
             col.addView(text(c, name, 14, MUTED));
             col.addView(text(c, c.getString(Weather.label(d.code)), 13, Color.WHITE));
             col.addView(text(c, Math.round(d.min) + "° / " + Math.round(d.max) + "°", 15, Color.WHITE));
-            col.addView(text(c, "%" + d.rainChance, 14, ACCENT));
+            col.addView(text(c, percent.format(d.rainChance / 100.0), 14, ACCENT));
             days.addView(col, new LinearLayout.LayoutParams(0, WRAP, 1));
         }
         card.addView(days, new LinearLayout.LayoutParams(MATCH, WRAP));
@@ -188,14 +202,13 @@ final class Cards {
         card.addView(text(c, c.getString(R.string.apps_count, a.pkgs.size()), 14, MUTED));
         LinearLayout r = row(c);
         r.setPadding(0, 12, 0, 0);
-        PackageManager pm = c.getPackageManager();
         for (int i = 0; i < a.pkgs.size() && i < MAX_APPS; i++) {
             String pkg = a.pkgs.get(i);
             LinearLayout tile = column(c);
             tile.setGravity(Gravity.CENTER_HORIZONTAL);
             tile.setPadding(0, 0, 28, 0);
             tile.addView(icon(c, pkg, 64), new LinearLayout.LayoutParams(64, 64));
-            TextView label = text(c, label(pm, pkg), 13, Color.WHITE);
+            TextView label = text(c, Actions.label(c, pkg), 13, Color.WHITE);
             label.setMaxWidth(130);
             label.setSingleLine(true);
             label.setEllipsize(TextUtils.TruncateAt.END);
@@ -289,14 +302,6 @@ final class Cards {
         img.setMaxHeight(size);
         img.setAdjustViewBounds(true);
         return img;
-    }
-
-    private static String label(PackageManager pm, String pkg) {
-        try {
-            return pm.getApplicationLabel(pm.getApplicationInfo(pkg, 0)).toString();
-        } catch (PackageManager.NameNotFoundException e) {
-            return pkg;
-        }
     }
 
     private static TextView chip(Context c, String s) {

@@ -14,12 +14,53 @@ Work step by step and tell the person what you found.
 - Do not disable or uninstall system packages unless the person asks.
 - Keep a short list of what you changed, so it can be undone.
 
-## 1. Check the TV
+## 1. Find and check the TV
 
-Ask for the TV's IP address, then:
+The person may tell you the TV's brand and model.
+Use it to pick the right TV, and to look for vendor quirks in step 3.
+Do not ask for the IP address first. Find the TV on the network.
+
+You need adb. If it is missing, ask to install Android platform-tools:
+`brew install --cask android-platform-tools` on macOS, or https://developer.android.com/tools/releases/platform-tools.
+
+```
+adb devices -l
+adb mdns services
+```
+
+`adb mdns services` lists devices that offer adb on the network, for example `_adb._tcp 192.168.1.2:5555`.
+If the TV is not there, list the Android TVs on the network by name.
+These commands run until you stop them, so stop them after a few seconds:
+
+```
+dns-sd -B _androidtvremote2._tcp           # macOS
+avahi-browse -rt _androidtvremote2._tcp    # Linux
+```
+
+On macOS, get the address with `dns-sd -L "<name>" _androidtvremote2._tcp`, then `dns-sd -G v4 <host>`.
+The network name is often not the model. A TCL 50P735 calls itself "Smart TV Pro".
+If you find more than one TV, ask which one.
+If nothing shows up, ask the person to read the address on the TV: Settings, Network and Internet, then their network.
 
 ```
 adb connect <tv-ip>:5555
+```
+
+The TV asks whether to allow debugging. Ask the person to tick "Always allow" and press OK.
+Then `adb devices` shows the TV as `device`.
+
+- `Connection refused`: debugging is off. Ask the person to turn it on.
+  On Google TV: Settings, System, About, then press OK on "Android TV OS build" seven times.
+  Then Settings, System, Developer options, USB debugging.
+  On older Android TV, About is under Device Preferences.
+- Some newer TVs only offer "Wireless debugging" in Developer options.
+  There, "Pair device with pairing code" shows a port and a code.
+  Run `adb pair <tv-ip>:<port> <code>`, then `adb connect` to the port shown on the Wireless debugging screen.
+- More than one device in `adb devices`: add `-s <tv-ip>:5555` to every adb command.
+
+Now check the TV:
+
+```
 adb shell getprop ro.build.version.release        # 11 or newer
 adb shell getprop ro.product.cpu.abilist
 adb shell pm list packages -e | grep com.google.android.katniss
@@ -167,6 +208,11 @@ If this TV needs a code change, suggest a fork:
 
 Keep TV specific changes in the fork.
 Send back fixes that help every TV as a pull request.
+
+## More fixes for the TV
+
+[TUNEUP.md](TUNEUP.md) covers a slow TV, a lighter home screen, remote keys that do nothing, a mic key that does nothing, and showing an iPhone on the TV.
+Mention it at the end if the person complains about one of these.
 
 ## Undo
 

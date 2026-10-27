@@ -11,7 +11,7 @@ Site: https://urtuba.github.io/tvask/
 
 ## See it
 
-These run on a TCL Google TV. The questions were sent as text through adb, the same path AGENTS.md uses for tests.
+Recorded on a TCL Google TV.
 
 | | |
 |---|---|
@@ -40,18 +40,25 @@ You need:
 
 - Android TV or Google TV with Android 11 or newer, with the Google app for Android TV (`com.google.android.katniss`).
 - A voice remote paired over Bluetooth. An IR-only remote sends no audio.
-- A computer with adb, and an AI coding agent that can run shell commands.
+- A computer and an AI coding agent that can run shell commands. The agent installs adb if it is missing.
 - An API key for an OpenAI compatible chat model. The default is DeepSeek.
 - A Brave Search API key.
 
-Turn on Developer options and USB debugging on the TV, then give your agent this prompt:
+On the TV, turn on Developer options and USB debugging.
+On Google TV: Settings, System, About, then press OK on "Android TV OS build" seven times.
+USB debugging is then under Settings, System, Developer options.
+
+Give your agent this prompt, with your TV's brand and model:
 
 ```
-Read AGENTS.md in https://github.com/urtuba/tvask and set up tvask on my TV
-at <tv-ip>. Show me each command before you run it.
+Set up tvask on my TV, a <brand and model>.
+It is on my Wi-Fi. Follow
+https://raw.githubusercontent.com/urtuba/tvask/main/AGENTS.md
+and show me each command before you run it.
 ```
 
-[AGENTS.md](AGENTS.md) walks the agent through checks, install, vendor quirks, keys and a test.
+You don't need the TV's IP address. The agent finds the TV on your network.
+[AGENTS.md](AGENTS.md) walks it through checks, install, vendor quirks, keys and a test.
 You can also follow it by hand.
 
 An agent with adb access has shell rights on your TV.
@@ -62,6 +69,20 @@ Read what it runs before you allow it.
 If your TV needs code changes, fork this repository and keep those changes in your fork.
 Search links, panel behavior and the model's tools are each in one file, see AGENTS.md.
 Send back fixes that help every TV as a pull request, and tell us about your TV in an issue.
+
+## Tune up the TV
+
+The same agent can fix what makes Android TVs annoying.
+[TUNEUP.md](TUNEUP.md) has short guides for a slow TV, a lighter home screen, remote keys that do nothing, a mic key that does nothing, and showing an iPhone on the TV.
+All of them worked on the tested TCL.
+Tell your agent the problem and point it to the part:
+
+```
+My Android TV feels slow.
+Follow "Slow TV" in
+https://raw.githubusercontent.com/urtuba/tvask/main/TUNEUP.md
+and ask me before every change.
+```
 
 ## How it works
 

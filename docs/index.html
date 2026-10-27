@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>tvask: ask your Android TV</title>
+<meta name="description" content="An open source voice assistant for Android TV. Press the mic key, speak in your own words, and an AI model you choose answers. Set it up with your own AI coding agent.">
+<style>
+:root{--bg:#0f0f0f;--panel:#171717;--line:#2c2c2c;--text:#f2f2f2;--muted:#9a9a9a;--accent:#ffd25a;--ok:#7bd88f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+a{color:var(--accent)}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px}
+header{padding:64px 0 32px}
+.mark{font-size:15px;color:var(--muted);letter-spacing:.02em}
+h1{font-size:44px;line-height:1.15;margin:8px 0 12px;font-weight:600}
+h2{font-size:24px;margin:56px 0 12px;font-weight:600}
+.lead{font-size:19px;color:#d6d6d6;max-width:640px;margin:0}
+.btns{display:flex;flex-wrap:wrap;gap:10px;margin:24px 0 0}
+.btn{display:inline-block;padding:10px 16px;border:1px solid var(--line);border-radius:4px;color:var(--text);text-decoration:none}
+.btn.main{background:var(--accent);border-color:var(--accent);color:#1a1a1a;font-weight:600}
+.tv{background:#2a2a2a;border-radius:6px;padding:20px;margin:40px 0 0}
+.card{background:var(--panel);border-radius:4px;padding:18px 22px;max-width:760px}
+.small{font-size:13px;color:var(--muted)}
+.heard{color:var(--accent);font-size:18px}
+.answer{font-size:19px;margin:6px 0 14px}
+.meter{display:flex;gap:6px;margin:8px 0 10px}.meter i{width:10px;height:10px;border-radius:2px;background:#3a3a3a}.meter i.on{background:var(--accent)}
+.now{display:flex;align-items:baseline;gap:14px}.temp{font-size:44px;font-weight:600}
+.days{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:12px;text-align:center;font-size:14px}
+.days b{display:block;color:var(--muted);font-weight:400}.days em{color:var(--accent);font-style:normal}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.item{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px}
+.item h3{margin:0 0 4px;font-size:16px}.item p{margin:0;color:#cfcfcf;font-size:15px}
+pre{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:16px;overflow-x:auto;white-space:pre-wrap;margin:0}
+.copy{margin-top:8px}
+button{font:inherit;background:none;color:var(--text);border:1px solid var(--line);border-radius:4px;padding:8px 14px;cursor:pointer}
+ol,ul{padding-left:20px}li{margin:4px 0}
+img{max-width:100%;border-radius:4px;border:1px solid var(--line)}
+footer{margin:64px 0 40px;color:var(--muted);font-size:14px}
+@media (max-width:600px){h1{font-size:34px}.days{grid-template-columns:repeat(3,1fr)}.days div:nth-child(n+4){display:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+<div class="mark">tvask</div>
+<h1>Ask your Android TV<br>in your own words.</h1>
+<p class="lead">Press the mic key on your remote and speak. An AI model you choose answers, searches the web, opens apps and shows cards. Open source, MIT licensed.</p>
+<div class="btns">
+<a class="btn main" href="https://github.com/urtuba/tvask/blob/main/AGENTS.md">Set it up with your agent</a>
+<a class="btn" href="https://github.com/urtuba/tvask/releases/latest">Download the APK</a>
+<a class="btn" href="https://github.com/urtuba/tvask">Source on GitHub</a>
+</div>
+</header>
+
+<div class="tv" aria-label="What tvask looks like on the TV">
+<div class="card">
+<div class="small">tvask</div>
+<div class="meter" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+<div class="heard">What's the weather in Ankara tomorrow?</div>
+<div class="answer">Tomorrow in Ankara it stays overcast, between 10 and 19 degrees, with a small chance of rain.</div>
+<div class="small">Ankara · now</div>
+<div class="now"><span class="temp">17°</span><span>Overcast · feels 16° · wind 7 km/h</span></div>
+<div class="days">
+<div><b>Wed</b>Rain<br>10° / 17°<br><em>53%</em></div>
+<div><b>Thu</b>Overcast<br>10° / 19°<br><em>23%</em></div>
+<div><b>Fri</b>Rain<br>10° / 16°<br><em>69%</em></div>
+<div><b>Sat</b>Clear<br>8° / 17°<br><em>8%</em></div>
+<div><b>Sun</b>Clear<br>9° / 18°<br><em>5%</em></div>
+</div>
+</div>
+</div>
+
+<h2>Every TV is different</h2>
+<p>TV makers add their own memory cleaners, start blockers and key handling. So tvask is not an app you install and forget. You set it up together with your own AI coding agent. It checks your TV, installs tvask, adapts to what it finds, and tests the result with you.</p>
+<p>Turn on Developer options and USB debugging on the TV, then give your agent this prompt:</p>
+<pre id="prompt">Read AGENTS.md in https://github.com/urtuba/tvask and set up tvask on my TV
+at &lt;tv-ip&gt;. Show me each command before you run it.</pre>
+<button class="copy" id="copy" type="button">Copy the prompt</button>
+<p class="small">An agent with adb access has shell rights on your TV. Read what it runs before you allow it.</p>
+
+<h2>What you need</h2>
+<ul>
+<li>Android TV or Google TV with Android 11 or newer, with the Google app for Android TV.</li>
+<li>A voice remote paired over Bluetooth. An IR-only remote sends no audio.</li>
+<li>A computer with adb, and an AI coding agent that can run shell commands.</li>
+<li>An API key for an OpenAI compatible chat model, DeepSeek by default, and a Brave Search API key.</li>
+</ul>
+
+<h2>What it can do</h2>
+<div class="grid">
+<div class="item"><h3>Answer and search</h3><p>Answers in the language you speak, and searches the web or reads a page when it needs to.</p></div>
+<div class="item"><h3>Open and find</h3><p>Opens apps and searches inside YouTube, YouTube Music, Prime Video and the browser.</p></div>
+<div class="item"><h3>Cards</h3><p>Weather, site options you pick with OK, match scores, open apps and system status.</p></div>
+<div class="item"><h3>The TV itself</h3><p>Lists and closes open apps, checks whether a site works, shows memory and storage.</p></div>
+<div class="item"><h3>Conversation and memory</h3><p>Follow-up questions work for five minutes. Small notes about you stay on the TV.</p></div>
+<div class="item"><h3>Context, not pixels</h3><p>Knows what is playing and what the app in front shows, if you allow it. Never uses screenshots.</p></div>
+</div>
+
+<h2>Settings on the TV</h2>
+<p>Reading speed, the wait after a pause, the browser, the screen language and the memory size. Change them with the remote.</p>
+<img src="img/settings.png" alt="The tvask settings screen on a TV, in English" loading="lazy">
+
+<h2>Your TV needs a change? Fork it.</h2>
+<p>Most TVs need only settings and adb commands. If yours needs code changes, fork the repository and keep them in your fork. Search links, the panel and the model's tools each live in one file. Send back fixes that help every TV as a pull request, and tell us about your TV in an issue.</p>
+
+<h2>Privacy</h2>
+<ul>
+<li>Your voice goes to Google, through Google's speech recognizer on the TV.</li>
+<li>The recognized text, your app list and your memory notes go to the chat model provider you chose. The TV context goes only when you ask about it, and you can turn it off.</li>
+<li>Text from web pages and the screen is treated as data. While it is in a turn, tvask cannot close apps or change its memory.</li>
+<li>Web searches go to Brave. Weather places go to Open-Meteo.</li>
+<li>API keys stay in the app's private storage. Only adb can set them.</li>
+</ul>
+
+<footer>
+<p>Tested on a TCL 50P735 with the RC902V remote. MIT license. <a href="https://github.com/urtuba/tvask">github.com/urtuba/tvask</a></p>
+</footer>
+
+</div>
+<script>
+document.getElementById('copy').addEventListener('click', function () {
+  var b = this, text = document.getElementById('prompt').textContent;
+  navigator.clipboard.writeText(text).then(function () {
+    b.textContent = 'Copied';
+    setTimeout(function () { b.textContent = 'Copy the prompt'; }, 1500);
+  }, function () {
+    b.textContent = 'Select the text to copy it';
+  });
+});
+</script>
+</body>
+</html>

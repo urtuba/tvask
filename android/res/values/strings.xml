@@ -17,5 +17,10 @@
     <string name="opened">Opened %1$s.</string>
     <string name="searched">Searched in %1$s.</string>
     <string name="opening">Opening %1$s</string>
+    <string name="open_apps">Open apps: %1$s.</string>
+    <string name="no_open_apps">No apps are open.</string>
+    <string name="closed">Closed %1$s.</string>
+    <string name="need_usage">To see open apps, tvask needs usage access. Run the appops command from the README.</string>
+    <string name="status">Memory: %1$s of %2$s in use, %3$d%%. Storage: %4$s free of %5$s. On for %6$d days and %7$d hours.</string>
     <string name="searching_in">Searching in %1$s</string>
 </resources>

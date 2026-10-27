@@ -46,7 +46,8 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     private static final int PAST_TURNS = 3;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
-    private View card, meter;
+    private View card;
+    private LevelMeter meter;
     private TextView past, state, words, answer;
     private SpeechRecognizer sr;
     private Intent listen;
@@ -148,17 +149,15 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         past = text(14, Color.GRAY);
         past.setPadding(0, 4, 0, 12);
         state = text(14, Color.LTGRAY);
-        meter = new View(getContext());
-        meter.setBackgroundColor(Color.rgb(255, 210, 90));
-        meter.setPivotX(0);
+        meter = new LevelMeter(getContext());
         words = text(18, Color.rgb(255, 210, 90));
         answer = text(20, Color.WHITE);
         answer.setPadding(0, 12, 0, 0);
         box.addView(title);
         box.addView(past);
         box.addView(state);
-        LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 4);
-        mp.setMargins(0, 6, 0, 6);
+        LinearLayout.LayoutParams mp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, 16);
+        mp.setMargins(0, 10, 0, 8);
         box.addView(meter, mp);
         box.addView(words);
         box.addView(answer);
@@ -182,7 +181,8 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         card.setAlpha(0f);
         card.setTranslationY(-24f);
         card.animate().alpha(1f).translationY(0f).setDuration(200).start();
-        meter.setScaleX(0f);
+        meter.setLevel(0f);
+        meter.setVisibility(View.VISIBLE);
         state.setText(R.string.listening);
         line(words, "");
         line(answer, "");
@@ -276,11 +276,13 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     }
 
     // Google's recognizer reports about -2 for silence and up to about 10
-    // for loud speech.
+    // for loud speech. Values below 1 are room noise and show nothing. The
+    // curve keeps normal speech in the middle of the meter.
     @Override
     public void onRmsChanged(float rms) {
         if (listening) {
-            meter.setScaleX(Math.max(0.02f, Math.min(1f, (rms + 2f) / 12f)));
+            float v = Math.max(0f, (rms - 1f) / 10f);
+            meter.setLevel((float) Math.pow(v, 1.4));
         }
     }
 
@@ -290,7 +292,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
 
     @Override
     public void onEndOfSpeech() {
-        meter.animate().scaleX(0f).setDuration(150).start();
+        meter.setLevel(0f);
         state.setText(R.string.transcribing);
     }
 
@@ -345,7 +347,8 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     // done ends listening and hands the parts to the brain.
     private void done() {
         more = false;
-        meter.animate().scaleX(0f).setDuration(150).start();
+        meter.setLevel(0f);
+        meter.setVisibility(View.GONE);
         if (parts.isEmpty()) {
             hideLater(3000);
             return;

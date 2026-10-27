@@ -6,6 +6,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -72,6 +73,10 @@ final class Brain {
                 String acted = null;
                 String app = null;
                 int kind = OPENED;
+                // direct is a device result that tvask shows as is,
+                // without asking the model again.
+                String direct = null;
+                Device device = actions.device(apps);
                 for (int i = 0; i < calls.length(); i++) {
                     JSONObject call = calls.getJSONObject(i);
                     JSONObject fn = call.getJSONObject("function");
@@ -105,6 +110,20 @@ final class Brain {
                         }
                         acted = "search_in_app " + pkg + " " + q;
                         app = actions.label(pkg);
+                    } else if (name.equals("list_apps")) {
+                        result = device.openAppsText();
+                        direct = result;
+                    } else if (name.equals("close_apps")) {
+                        List<String> pkgs = new ArrayList<>();
+                        JSONArray a = args.optJSONArray("packages");
+                        for (int k = 0; a != null && k < a.length(); k++) {
+                            pkgs.add(a.getString(k));
+                        }
+                        result = device.close(pkgs, args.optBoolean("all"));
+                        direct = result;
+                    } else if (name.equals("system_status")) {
+                        result = device.statusText();
+                        direct = result;
                     } else {
                         result = "Unknown tool.";
                     }
@@ -118,6 +137,11 @@ final class Brain {
                 if (acted != null) {
                     Conversation.add(turn);
                     l.onAction(acted, app, kind);
+                    return;
+                }
+                if (direct != null) {
+                    Conversation.add(turn);
+                    l.onAnswer(direct);
                     return;
                 }
             }
@@ -139,6 +163,8 @@ final class Brain {
                 .append("To show a web page, call open_url with a full https link. To show web search results, call search_in_app with the browser.\n")
                 .append("Only call these when the user clearly asks for an app, a page, or something to watch or play.\n")
                 .append("If the guesses make no sense, never guess an app. Say in one short sentence that you did not understand.\n")
+                .append("To see which apps are open, call list_apps. To close apps, call close_apps.\n")
+                .append("For the TV's memory, storage or uptime, call system_status.\n")
                 .append("Call web_search for news, weather, scores, prices, or anything you are not sure about.\n")
                 .append("Otherwise answer directly.\n")
                 .append("Your answer is shown on the TV and read aloud.\n")
@@ -195,7 +221,25 @@ final class Brain {
                 .put(tool("open_url", "Open a web page in the TV's browser.",
                         new JSONObject().put("url", prop("Full https link.", null))))
                 .put(tool("web_search", "Search the web. Results are short snippets.",
-                        new JSONObject().put("query", prop("Search query.", null))));
+                        new JSONObject().put("query", prop("Search query.", null))))
+                .put(tool("list_apps", "List the apps that are open on the TV. The result is shown to the user.",
+                        new JSONObject()))
+                .put(new JSONObject().put("type", "function").put("function", new JSONObject()
+                        .put("name", "close_apps")
+                        .put("description", "Close apps on the TV. The result is shown to the user.")
+                        .put("parameters", new JSONObject()
+                                .put("type", "object")
+                                .put("properties", new JSONObject()
+                                        .put("packages", new JSONObject()
+                                                .put("type", "array")
+                                                .put("description", "Package names of the apps to close.")
+                                                .put("items", prop("Package name.", pkgs)))
+                                        .put("all", new JSONObject()
+                                                .put("type", "boolean")
+                                                .put("description", "True to close all open apps.")))
+                                .put("required", new JSONArray()))))
+                .put(tool("system_status", "Show the TV's memory, storage and uptime to the user.",
+                        new JSONObject()));
     }
 
     private static JSONObject tool(String name, String desc, JSONObject props) throws JSONException {

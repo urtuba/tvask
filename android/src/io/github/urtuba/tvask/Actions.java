@@ -53,6 +53,10 @@ final class Actions {
         return out;
     }
 
+    Device device(Map<String, String> apps) {
+        return new Device(c, apps);
+    }
+
     boolean canSearch(String pkg) {
         return SEARCH.containsKey(pkg) || pkg.equals(browser());
     }

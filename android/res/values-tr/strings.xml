@@ -16,5 +16,10 @@
     <string name="opened">%1$s açıldı.</string>
     <string name="searched">%1$s içinde arandı.</string>
     <string name="opening">%1$s açılıyor</string>
+    <string name="open_apps">Açık uygulamalar: %1$s.</string>
+    <string name="no_open_apps">Açık uygulama yok.</string>
+    <string name="closed">%1$s kapatıldı.</string>
+    <string name="need_usage">Açık uygulamaları görmek için kullanım erişimi gerekiyor. README\'deki appops komutunu çalıştır.</string>
+    <string name="status">Bellek: %2$s içinden %1$s kullanımda, yüzde %3$d. Depolama: %5$s içinden %4$s boş. TV %6$d gün %7$d saattir açık.</string>
     <string name="searching_in">%1$s içinde arıyorum</string>
 </resources>

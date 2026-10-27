@@ -11,9 +11,11 @@ Status: early. It answers questions, searches the web, opens apps and searches i
 2. Android opens tvask, because tvask is the default assistant.
 3. tvask asks Google's speech recognizer on the TV for the words.
    Only Google's remote service can read the remote's audio, so tvask does not record it itself.
-4. tvask sends the recognizer's top five guesses to an AI model with four tools:
-   open an app, search inside an app, open a web page, and search the web.
+4. tvask sends the recognizer's top five guesses to an AI model with tools:
+   open an app, search inside an app, open a web page, search the web,
+   list open apps, close apps, and show memory, storage and uptime.
    The guesses help the model fix words the recognizer got wrong.
+   For the last three, the TV makes the answer, so the model is called only once.
 5. tvask shows the answer and reads it aloud.
    For an app or a page, it says what it opens and fades out.
 
@@ -59,7 +61,11 @@ If you try another TV, please open an issue and tell us how it went.
    ```
    Do not change `voice_recognition_service`.
    It must stay on Google's recognizer.
-3. TCL TVs only. TCL blocks new apps from starting in the background:
+3. Let tvask see which apps are open:
+   ```
+   adb shell appops set io.github.urtuba.tvask GET_USAGE_STATS allow
+   ```
+   TCL TVs only. TCL blocks new apps from starting in the background:
    ```
    adb shell appops set io.github.urtuba.tvask APP_AUTO_START allow
    ```
@@ -147,6 +153,10 @@ adb logcat -s tvask
   In that mode the remote's audio reaches Google's recognizer through the normal recording path.
 - TCL: the window manager sends "close system dialogs" on key presses.
   tvask ignores it. Otherwise the panel would close right after it opens.
+- An app counts as open if it was used in the last three hours.
+  Android does not show other apps' processes to a normal app.
+  Closing goes to the home screen first, because Android only stops apps in the background.
+  Memory use per app and CPU use are not available for the same reason.
 - TCL: the memory cleaner may stop tvask while it is idle.
   Android starts it again on the next key press.
 

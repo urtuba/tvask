@@ -88,7 +88,12 @@ If you try another TV, please open an issue and tell us how it went.
 
 ## Settings
 
-Set a value with the `SET` command from step 4.
+Open tvask from the app list, or say "open tvask settings".
+The settings screen changes the reading speed, the wait after a pause, the browser and the screen language.
+Use left and right, or OK, to change a value.
+API keys stay with adb.
+
+Every setting can also be set with the `SET` command from step 4.
 An empty value goes back to the default.
 
 | Name | Default | Meaning |
@@ -100,6 +105,8 @@ An empty value goes back to the default.
 | `chat_effort` | `low` | Sent as `reasoning_effort`. Low keeps answers fast. |
 | `browser` | first browser found | Package name of the browser, for example `com.phlox.tvwebbrowser` |
 | `speech_rate` | `1.25` | Reading speed. 1 is the voice's normal speed. |
+| `listen_more` | `2000` | Milliseconds to wait for more speech after a pause. 0 turns it off. |
+| `ui_language` | TV language | Language of tvask's own texts, for example `en` or `tr`. Answers follow the language you speak. |
 
 Check what is set. Keys show only their length:
 

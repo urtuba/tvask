@@ -7,10 +7,11 @@ import android.content.SharedPreferences;
 // API keys live only in the app's private storage on the TV.
 final class Config {
     static final String[] NAMES = {"chat_url", "chat_model", "chat_effort", "chat_key", "brave_key", "browser",
-            "speech_rate"};
+            "speech_rate", "listen_more", "ui_language"};
 
     final String chatUrl, chatModel, chatEffort, chatKey, braveKey, browser;
     final float speechRate;
+    final long listenMore;
 
     Config(Context c) {
         SharedPreferences p = prefs(c);
@@ -22,6 +23,7 @@ final class Config {
         // Empty means the first browser Android finds.
         browser = p.getString("browser", "");
         speechRate = number(p.getString("speech_rate", ""), 1.25f);
+        listenMore = (long) number(p.getString("listen_more", ""), 2000);
     }
 
     private static float number(String s, float def) {

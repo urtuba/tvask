@@ -20,6 +20,22 @@
     <string name="opened">Opened %1$s.</string>
     <string name="searched">Searched in %1$s.</string>
     <string name="opening">Opening %1$s</string>
+    <string name="settings_title">tvask settings</string>
+    <string name="settings_speech">Reading and listening</string>
+    <string name="settings_screen">Browser and language</string>
+    <string name="set_rate">Reading speed</string>
+    <string name="set_wait">Wait for more after a pause</string>
+    <string name="set_test">Play a sample</string>
+    <string name="set_sample">This is how tvask sounds at this speed.</string>
+    <string name="set_browser">Browser</string>
+    <string name="set_language">Screen language</string>
+    <string name="set_tv_language">TV language</string>
+    <string name="set_auto">Automatic</string>
+    <string name="set_off">Off</string>
+    <string name="set_seconds">%1$s s</string>
+    <string name="set_keys_ok">API keys are set. Change them with adb, see the README.</string>
+    <string name="set_keys_missing">An API key is missing. Set it with adb, see the README.</string>
+    <string name="decimal" translatable="false">.</string>
     <string name="wx_now">%1$s · now</string>
     <string name="wx_detail">feels %1$d° · wind %2$d km/h</string>
     <string name="wx_clear">Clear</string>

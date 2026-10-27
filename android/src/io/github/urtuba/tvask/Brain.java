@@ -133,6 +133,12 @@ final class Brain {
                         }
                         acted = "search_in_app " + pkg + " " + q;
                         app = actions.label(pkg);
+                    } else if (name.equals("open_settings")) {
+                        actions.openSettings();
+                        result = "Opened.";
+                        acted = "open_settings";
+                        pkg = actions.self();
+                        app = actions.label(pkg);
                     } else if (name.equals("list_apps")) {
                         if (device.canSeeApps()) {
                             List<String> open = device.openApps();
@@ -206,6 +212,7 @@ final class Brain {
                 .append("If the guesses make no sense, never guess an app. Say in one short sentence that you did not understand.\n")
                 .append("To see which apps are open, call list_apps. To close apps, call close_apps.\n")
                 .append("For the TV's memory, storage or uptime, call system_status.\n")
+                .append("To change tvask's reading speed, wait time, browser or screen language, call open_settings.\n")
                 .append("For weather, call weather with the place name. Do not use web_search for weather.\n")
                 .append("Call web_search for news, scores, prices, or anything you are not sure about.\n")
                 .append("web_search gives short snippets. If they do not hold the answer, call read_page on the best result.\n")
@@ -292,6 +299,8 @@ final class Brain {
                                                 .put("description", "True to close all open apps.")))
                                 .put("required", new JSONArray()))))
                 .put(tool("system_status", "Show the TV's memory, storage and uptime to the user.",
+                        new JSONObject()))
+                .put(tool("open_settings", "Open tvask's own settings: reading speed, wait time, browser, screen language.",
                         new JSONObject()))
                 .put(fn("show_sites", "Show up to 3 numbered site options. The user picks one by number or with the remote.",
                         new JSONObject()

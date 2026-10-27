@@ -40,13 +40,16 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     static final ComponentName GOOGLE = new ComponentName("com.google.android.katniss",
             "com.google.android.apps.tvsearch.voice.recognition.KatnissRecognitionService");
     private static final Locale TURKISH = new Locale("tr", "TR");
-    // After a pause, tvask listens again for MORE_MS, so the user can go on.
-    // It stops after MAX_PARTS stretches of speech.
-    private static final long MORE_MS = 2000;
+    // After a pause, tvask listens again for moreMs, so the user can go on.
+    // It stops after MAX_PARTS stretches of speech. 0 turns this off.
     private static final int MAX_PARTS = 4;
     private static final int PAST_TURNS = 3;
 
     private final Handler ui = new Handler(Looper.getMainLooper());
+    // lc is the context for texts and views, in the ui_language setting.
+    private Context lc;
+    private String lcLang;
+    private long moreMs;
     private View card;
     private LevelMeter meter;
     private TextView past, state, words, answer;
@@ -100,6 +103,8 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     @Override
     public void onCreate() {
         super.onCreate();
+        lcLang = Locales.lang(getContext());
+        lc = Locales.wrap(getContext());
         tts = new TextToSpeech(getContext(), new TextToSpeech.OnInitListener() {
             @Override
             public void onInit(int status) {
@@ -151,7 +156,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     // A thin bar under the state line moves with the voice while listening.
     @Override
     public View onCreateContentView() {
-        LinearLayout box = new LinearLayout(getContext());
+        LinearLayout box = new LinearLayout(lc);
         box.setOrientation(LinearLayout.VERTICAL);
         box.setPadding(40, 24, 40, 28);
         GradientDrawable bg = new GradientDrawable();
@@ -163,7 +168,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         past = text(14, Color.GRAY);
         past.setPadding(0, 4, 0, 12);
         state = text(14, Color.LTGRAY);
-        meter = new LevelMeter(getContext());
+        meter = new LevelMeter(lc);
         words = text(18, Color.rgb(255, 210, 90));
         answer = text(20, Color.WHITE);
         answer.setPadding(0, 12, 0, 0);
@@ -175,11 +180,11 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         box.addView(meter, mp);
         box.addView(words);
         box.addView(answer);
-        slot = new LinearLayout(getContext());
+        slot = new LinearLayout(lc);
         slot.setOrientation(LinearLayout.VERTICAL);
         slot.setPadding(0, 16, 0, 0);
         box.addView(slot);
-        FrameLayout root = new FrameLayout(getContext());
+        FrameLayout root = new FrameLayout(lc);
         FrameLayout.LayoutParams lp = new FrameLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, Gravity.TOP);
         lp.setMargins(48, 32, 48, 0);
@@ -191,6 +196,13 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     @Override
     public void onShow(Bundle args, int flags) {
         super.onShow(args, flags);
+        String lang = Locales.lang(getContext());
+        if (!lang.equals(lcLang)) {
+            lcLang = lang;
+            lc = Locales.wrap(getContext());
+            setContentView(onCreateContentView());
+        }
+        moreMs = new Config(getContext()).listenMore;
         turn++;
         ui.removeCallbacksAndMessages(null);
         tts.stop();
@@ -238,7 +250,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     private void showPast() {
         StringBuilder sb = new StringBuilder();
         List<String[]> lines = Conversation.shown();
-        String you = getContext().getString(R.string.you);
+        String you = lc.getString(R.string.you);
         for (int i = Math.max(0, lines.size() - PAST_TURNS); i < lines.size(); i++) {
             sb.append(you).append(": ").append(lines.get(i)[0]).append('\n')
                     .append("tvask: ").append(lines.get(i)[1]).append("\n\n");
@@ -284,7 +296,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     public void onReadyForSpeech(Bundle p) {
         if (more) {
             state.setText(R.string.go_on);
-            ui.postDelayed(noMore, MORE_MS);
+            ui.postDelayed(noMore, moreMs);
         } else {
             state.setText(R.string.ready);
         }
@@ -348,7 +360,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
             return;
         }
         Log.i(TAG, "recognizer error " + e);
-        state.setText(getContext().getString(R.string.error, e));
+        state.setText(lc.getString(R.string.error, e));
         save("ERROR " + e + "\tlast partial: " + last);
         hideLater(5000);
     }
@@ -371,7 +383,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
             parts.add(heard);
             line(words, said(""));
         }
-        if (heard.isEmpty() || parts.size() >= MAX_PARTS) {
+        if (heard.isEmpty() || parts.size() >= MAX_PARTS || moreMs == 0) {
             done();
             return;
         }
@@ -417,7 +429,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         final Brain brain = new Brain(
                 new OpenAIChat(cfg.chatUrl, cfg.chatKey, cfg.chatModel, cfg.chatEffort),
                 new BraveSearch(cfg.braveKey),
-                new Actions(getContext(), cfg.browser));
+                new Actions(lc, cfg.browser));
         final int myTurn = turn;
         final long start = SystemClock.elapsedRealtime();
         final Brain.Listener l = new Brain.Listener() {
@@ -453,15 +465,15 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
                     @Override
                     public void run() {
                         if (kind == Brain.NO_SEARCH) {
-                            String text = getContext().getString(R.string.no_app_search, app);
+                            String text = lc.getString(R.string.no_app_search, app);
                             Conversation.show(said(""), text);
                             reply(text, 3000);
                             return;
                         }
                         int note = kind == Brain.SEARCHED ? R.string.searched : R.string.opened;
-                        Conversation.show(said(""), getContext().getString(note, app));
+                        Conversation.show(said(""), lc.getString(note, app));
                         int now = kind == Brain.SEARCHED ? R.string.searching_in : R.string.opening;
-                        opening(pkg, getContext().getString(now, app), detail);
+                        opening(pkg, lc.getString(now, app), detail);
                     }
                 });
             }
@@ -482,7 +494,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
                 post(myTurn, new Runnable() {
                     @Override
                     public void run() {
-                        state.setText(getContext().getString(R.string.failed, message));
+                        state.setText(lc.getString(R.string.failed, message));
                         hideLater(8000);
                     }
                 });
@@ -545,14 +557,14 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         state.setText("");
         line(answer, "");
         if (pkg != null) {
-            put(Cards.opening(getContext(), pkg, text, detail));
+            put(Cards.opening(lc, pkg, text, detail));
         }
         say(text, 300);
     }
 
     // showCard draws card data from the brain under the answer.
     private void showCard(Object card) {
-        Context c = getContext();
+        Context c = lc;
         if (card instanceof Weather.Forecast) {
             put(Cards.weather(c, (Weather.Forecast) card));
         } else if (card instanceof Device.Status) {
@@ -578,14 +590,14 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
 
     // pick opens the site the user chose with the remote.
     private void pick(Cards.Site s) {
-        Actions a = new Actions(getContext(), new Config(getContext()).browser);
+        Actions a = new Actions(lc, new Config(getContext()).browser);
         save("PICK\t" + s.url);
         picking = false;
         if (!a.openUrl(s.url)) {
             return;
         }
-        Conversation.show(said(""), getContext().getString(R.string.opened, s.title));
-        opening(a.browser(), getContext().getString(R.string.opening, s.title), Uri.parse(s.url).getHost());
+        Conversation.show(said(""), lc.getString(R.string.opened, s.title));
+        opening(a.browser(), lc.getString(R.string.opening, s.title), Uri.parse(s.url).getHost());
     }
 
     private void put(View v) {
@@ -617,7 +629,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     }
 
     private TextView text(float size, int color) {
-        TextView t = new TextView(getContext());
+        TextView t = new TextView(lc);
         t.setTextSize(size);
         t.setTextColor(color);
         return t;

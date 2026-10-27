@@ -53,6 +53,14 @@ final class Actions {
         return out;
     }
 
+    String self() {
+        return c.getPackageName();
+    }
+
+    void openSettings() {
+        start(new Intent(c, SettingsActivity.class));
+    }
+
     Device device(Map<String, String> apps) {
         return new Device(c, apps);
     }

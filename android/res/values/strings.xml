@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name" translatable="false">tvask</string>
+    <string name="listening">Listening</string>
+    <string name="ready">Ready. Go ahead.</string>
+    <string name="hearing">Hearing you</string>
+    <string name="transcribing">Writing it down</string>
+    <string name="heard">You said:</string>
+    <string name="error">Error code %1$d</string>
+</resources>

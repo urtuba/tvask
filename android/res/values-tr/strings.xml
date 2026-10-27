@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="listening">Dinliyorum</string>
+    <string name="ready">Hazır, konuşabilirsin.</string>
+    <string name="hearing">Ses geliyor</string>
+    <string name="transcribing">Yazıya çevriliyor</string>
+    <string name="heard">Duydum:</string>
+    <string name="error">Hata kodu %1$d</string>
+</resources>

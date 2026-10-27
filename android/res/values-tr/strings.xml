@@ -9,6 +9,9 @@
     <string name="error">Hata kodu %1$d</string>
     <string name="thinking">Düşünüyorum</string>
     <string name="searching">İnternette arıyorum</string>
+    <string name="weather">Hava durumuna bakıyorum</string>
+    <string name="reading">Sayfayı okuyorum</string>
+    <string name="checking">Siteyi kontrol ediyorum</string>
     <string name="no_key">Yapay zeka anahtarı yok. README\'deki adb komutuyla ekle.</string>
     <string name="failed">Bir sorun oldu: %1$s</string>
     <string name="no_app_search">%1$s açıldı. Bu uygulamada aramayı kumandayla yapman gerekiyor.</string>

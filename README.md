@@ -13,6 +13,7 @@ Status: early. It answers questions, searches the web, opens apps and searches i
    Only Google's remote service can read the remote's audio, so tvask does not record it itself.
 4. tvask sends the recognizer's top five guesses to an AI model with tools:
    open an app, search inside an app, open a web page, search the web,
+   read a web page, check whether a site works, get the weather,
    list open apps, close apps, and show memory, storage and uptime.
    The guesses help the model fix words the recognizer got wrong.
    For the last three, the TV makes the answer, so the model is called only once.
@@ -34,6 +35,8 @@ Any browser that opens web links works.
 The default AI model is DeepSeek (`deepseek-flash`).
 Web search uses the Brave Search API.
 You need an API key for each.
+Weather comes from [Open-Meteo](https://open-meteo.com), which needs no key and is free for non-commercial use.
+Pages are read and sites are checked from the TV's own connection.
 
 ## Requirements
 
@@ -111,6 +114,8 @@ Support for OpenRouter is planned as a separate adapter.
 - Your voice goes to Google, through Google's speech recognizer.
 - The recognized text, your installed app list and the date go to the AI provider.
 - Web search queries go to Brave.
+- Place names for the weather go to Open-Meteo.
+- Pages the model reads or checks see a request from your TV.
 - tvask keeps a log of what it heard and did on the TV. See Debugging.
 
 ## Go back to Google Assistant

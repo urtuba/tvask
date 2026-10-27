@@ -32,7 +32,7 @@ final class Brain {
     }
 
     static final int OPENED = 0, SEARCHED = 1, NO_SEARCH = 2;
-    private static final int MAX_ROUNDS = 4;
+    private static final int MAX_ROUNDS = 5;
 
     private final Chat chat;
     private final Search search;
@@ -86,6 +86,15 @@ final class Brain {
                     if (name.equals("web_search")) {
                         l.onStatus(R.string.searching);
                         result = search.search(args.optString("query"));
+                    } else if (name.equals("weather")) {
+                        l.onStatus(R.string.weather);
+                        result = Weather.forecast(args.optString("place"));
+                    } else if (name.equals("read_page")) {
+                        l.onStatus(R.string.reading);
+                        result = Web.read(args.optString("url"));
+                    } else if (name.equals("check_site")) {
+                        l.onStatus(R.string.checking);
+                        result = Web.check(args.optString("url"));
                     } else if (name.equals("open_app")) {
                         String pkg = args.optString("package");
                         result = actions.open(pkg) ? "Opened." : "App not found.";
@@ -165,7 +174,10 @@ final class Brain {
                 .append("If the guesses make no sense, never guess an app. Say in one short sentence that you did not understand.\n")
                 .append("To see which apps are open, call list_apps. To close apps, call close_apps.\n")
                 .append("For the TV's memory, storage or uptime, call system_status.\n")
-                .append("Call web_search for news, weather, scores, prices, or anything you are not sure about.\n")
+                .append("For weather, call weather with the place name. Do not use web_search for weather.\n")
+                .append("Call web_search for news, scores, prices, or anything you are not sure about.\n")
+                .append("web_search gives short snippets. If they do not hold the answer, call read_page on the best result.\n")
+                .append("To check whether a website works, call check_site.\n")
                 .append("Otherwise answer directly.\n")
                 .append("Your answer is shown on the TV and read aloud.\n")
                 .append("Reply in the language of the request, in one language only, in at most 3 short sentences.\n")
@@ -222,6 +234,12 @@ final class Brain {
                         new JSONObject().put("url", prop("Full https link.", null))))
                 .put(tool("web_search", "Search the web. Results are short snippets.",
                         new JSONObject().put("query", prop("Search query.", null))))
+                .put(tool("weather", "Current weather and a 7 day forecast for a place.",
+                        new JSONObject().put("place", prop("City or town name, in its local spelling.", null))))
+                .put(tool("read_page", "Read a web page as text, from the TV's own connection.",
+                        new JSONObject().put("url", prop("Full https link.", null))))
+                .put(tool("check_site", "Check whether a website answers, with status and response time.",
+                        new JSONObject().put("url", prop("Full https link.", null))))
                 .put(tool("list_apps", "List the apps that are open on the TV. The result is shown to the user.",
                         new JSONObject()))
                 .put(new JSONObject().put("type", "function").put("function", new JSONObject()

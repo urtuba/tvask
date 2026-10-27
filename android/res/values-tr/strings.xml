@@ -3,6 +3,7 @@
     <string name="listening">Dinliyorum</string>
     <string name="ready">Hazır, konuşabilirsin.</string>
     <string name="hearing">Ses geliyor</string>
+    <string name="go_on">Devam edebilirsin, bitirmek için biraz bekle</string>
     <string name="transcribing">Yazıya çevriliyor</string>
     <string name="heard">Duydum:</string>
     <string name="error">Hata kodu %1$d</string>
@@ -11,4 +12,9 @@
     <string name="no_key">Yapay zeka anahtarı yok. README\'deki adb komutuyla ekle.</string>
     <string name="failed">Bir sorun oldu: %1$s</string>
     <string name="no_app_search">%1$s açıldı. Bu uygulamada aramayı kumandayla yapman gerekiyor.</string>
+    <string name="you">Sen</string>
+    <string name="opened">%1$s açıldı.</string>
+    <string name="searched">%1$s içinde arandı.</string>
+    <string name="opening">%1$s açılıyor</string>
+    <string name="searching_in">%1$s içinde arıyorum</string>
 </resources>

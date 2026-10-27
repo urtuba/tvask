@@ -6,9 +6,9 @@ import android.content.SharedPreferences;
 // Config holds the settings that adb sets through ConfigReceiver.
 // API keys live only in the app's private storage on the TV.
 final class Config {
-    static final String[] NAMES = {"chat_url", "chat_model", "chat_effort", "chat_key", "brave_key"};
+    static final String[] NAMES = {"chat_url", "chat_model", "chat_effort", "chat_key", "brave_key", "browser"};
 
-    final String chatUrl, chatModel, chatEffort, chatKey, braveKey;
+    final String chatUrl, chatModel, chatEffort, chatKey, braveKey, browser;
 
     Config(Context c) {
         SharedPreferences p = prefs(c);
@@ -17,6 +17,8 @@ final class Config {
         chatEffort = p.getString("chat_effort", "low");
         chatKey = p.getString("chat_key", "");
         braveKey = p.getString("brave_key", "");
+        // Empty means the first browser Android finds.
+        browser = p.getString("browser", "");
     }
 
     static SharedPreferences prefs(Context c) {

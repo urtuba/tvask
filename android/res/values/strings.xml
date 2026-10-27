@@ -4,6 +4,7 @@
     <string name="listening">Listening</string>
     <string name="ready">Ready. Go ahead.</string>
     <string name="hearing">Hearing you</string>
+    <string name="go_on">Go on, or wait a moment to finish</string>
     <string name="transcribing">Writing it down</string>
     <string name="heard">You said:</string>
     <string name="error">Error code %1$d</string>
@@ -12,4 +13,9 @@
     <string name="no_key">No AI key yet. Set one with adb, see the README.</string>
     <string name="failed">Something went wrong: %1$s</string>
     <string name="no_app_search">%1$s is open. Search in it with the remote.</string>
+    <string name="you">You</string>
+    <string name="opened">Opened %1$s.</string>
+    <string name="searched">Searched in %1$s.</string>
+    <string name="opening">Opening %1$s</string>
+    <string name="searching_in">Searching in %1$s</string>
 </resources>

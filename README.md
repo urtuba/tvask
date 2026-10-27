@@ -11,14 +11,23 @@ Status: early. It answers questions, searches the web, opens apps and searches i
 2. Android opens tvask, because tvask is the default assistant.
 3. tvask asks Google's speech recognizer on the TV for the words.
    Only Google's remote service can read the remote's audio, so tvask does not record it itself.
-4. tvask sends the recognizer's top five guesses to an AI model with three tools:
-   open an app, search inside an app, and search the web.
+4. tvask sends the recognizer's top five guesses to an AI model with four tools:
+   open an app, search inside an app, open a web page, and search the web.
    The guesses help the model fix words the recognizer got wrong.
-5. tvask shows the answer and reads it aloud, or it opens the app and closes itself.
+5. tvask shows the answer and reads it aloud.
+   For an app or a page, it says what it opens and fades out.
+
+After a short pause tvask keeps listening for two more seconds, so you can go on.
+It remembers the last six turns for five minutes, so follow-up questions work.
 
 Search inside an app works for YouTube, YouTube Music and Prime Video.
 Other apps only open, and tvask tells you to search with the remote.
 Netflix is one of them: it ignored both search and title links on the tested TV.
+In the browser, tvask opens pages and Google results.
+
+We use [TV Bro](https://github.com/truefedex/tv-bro) as the browser.
+It is open source, made for TV remotes, and its WebView build uses the TV's own Chromium engine.
+Any browser that opens web links works.
 
 The default AI model is DeepSeek (`deepseek-flash`).
 Web search uses the Brave Search API.
@@ -75,6 +84,7 @@ An empty value goes back to the default.
 | `chat_url` | `https://api.deepseek.com` | Base URL of an OpenAI compatible API |
 | `chat_model` | `deepseek-flash` | Model name |
 | `chat_effort` | `low` | Sent as `reasoning_effort`. Low keeps answers fast. |
+| `browser` | first browser found | Package name of the browser, for example `com.phlox.tvwebbrowser` |
 
 Check what is set. Keys show only their length:
 

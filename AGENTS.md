@@ -124,13 +124,17 @@ Now make tvask the default assistant.
 Do this after the quirks, so no start blocker stops Android from binding it:
 
 ```
-adb shell settings put secure voice_interaction_service com.google.android.katniss/.search.serviceapi.KatnissVoiceInteractionService
-adb shell settings put secure voice_interaction_service io.github.urtuba.tvask/.AssistService
-adb shell settings put secure assistant io.github.urtuba.tvask/.AssistService
+adb shell cmd role add-role-holder android.app.role.ASSISTANT io.github.urtuba.tvask
 ```
 
-Setting `voice_interaction_service` to Google first makes Android bind tvask fresh, even when the value was already tvask.
-Changing it also resets `assistant`, so set `assistant` last.
+Android keeps the default assistant as a role.
+Writing only the `voice_interaction_service` and `assistant` settings works until the next restart.
+At boot Android sets them again from the role holder, and Google is back.
+Check with `adb shell dumpsys role | grep -A1 role.ASSISTANT`: `holders=io.github.urtuba.tvask`.
+
+The role also makes tvask the TV's default speech recognizer (`voice_recognition_service`).
+tvask passes those requests on to Google's recognizer, so voice typing in other apps keeps working.
+On a TV without `com.google.android.katniss`, those requests fail.
 
 ## 4. Keys and settings
 
@@ -182,8 +186,16 @@ adb shell am broadcast -n io.github.urtuba.tvask/.ConfigReceiver \
 ```
 
 If it answers `not asked`, the assistant service is not bound yet.
-Run the three `settings put` lines at the end of step 3 again, then retry.
-This also happens after an update.
+This happens after an update. Make Android bind tvask fresh, then retry:
+
+```
+adb shell settings put secure voice_interaction_service com.google.android.katniss/.search.serviceapi.KatnissVoiceInteractionService
+adb shell settings put secure voice_interaction_service io.github.urtuba.tvask/.AssistService
+adb shell settings put secure assistant io.github.urtuba.tvask/.AssistService
+```
+
+Changing `voice_interaction_service` also resets `assistant`, so set `assistant` last.
+If tvask stops answering after a restart, check the role from step 3.
 
 Then ask the person to press the mic key on the remote and say "hello".
 Read the log:
@@ -217,8 +229,7 @@ Mention it at the end if the person complains about one of these.
 ## Undo
 
 ```
-adb shell settings put secure voice_interaction_service com.google.android.katniss/.search.serviceapi.KatnissVoiceInteractionService
-adb shell settings put secure assistant com.google.android.katniss/.search.serviceapi.KatnissVoiceInteractionService
+adb shell cmd role add-role-holder android.app.role.ASSISTANT com.google.android.katniss
 adb shell cmd notification disallow_listener io.github.urtuba.tvask/.MediaListener
 adb uninstall io.github.urtuba.tvask
 ```

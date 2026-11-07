@@ -34,6 +34,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 // AssistSession runs while tvask is on screen. It asks Google's recognizer for
 // the words, because only Google's remote service gets the remote's audio.
@@ -65,6 +67,9 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     private Intent listen;
     private TextToSpeech tts;
     private boolean ttsReady;
+    // speech runs TTS calls in order, off the main thread.
+    // On a slow TV one call can block for seconds, and the remote froze.
+    private final ExecutorService speech = Executors.newSingleThreadExecutor();
     private String last = "";
     private final List<List<String>> parts = new ArrayList<>();
     // listening is true while the recognizer runs. The recognizer reports an
@@ -160,8 +165,34 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         if (sr != null) {
             sr.destroy();
         }
-        tts.shutdown();
+        speech.execute(new Runnable() {
+            @Override
+            public void run() {
+                tts.shutdown();
+            }
+        });
+        speech.shutdown();
         super.onDestroy();
+    }
+
+    private void stopSpeech() {
+        speech.execute(new Runnable() {
+            @Override
+            public void run() {
+                tts.stop();
+            }
+        });
+    }
+
+    // shutdown stops a TTS engine off the main thread.
+    // On a slow TV the engine can take 10 s to let go, and the UI froze.
+    static void shutdown(final TextToSpeech t) {
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                t.shutdown();
+            }
+        }, "tts-shutdown").start();
     }
 
     // The panel is a card at the top. The rest of the screen stays visible.
@@ -219,7 +250,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
         cancelBrain();
         screen = "";
         ui.removeCallbacksAndMessages(null);
-        tts.stop();
+        stopSpeech();
         utterance = "";
         card.animate().cancel();
         card.setAlpha(0f);
@@ -309,7 +340,7 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
             sr.destroy();
             sr = null;
         }
-        tts.stop();
+        stopSpeech();
         utterance = "";
         card.animate().cancel();
         super.onHide();
@@ -629,19 +660,26 @@ public class AssistSession extends VoiceInteractionSession implements Recognitio
     // say reads text aloud in the voice for the given language, or in the
     // screen language if it is null, and closes the panel after milliseconds
     // past the end of the reading.
-    private void say(String text, long after, Locale voice) {
+    private void say(final String text, long after, Locale lang) {
         if (!ttsReady || text.isEmpty()) {
             hideLater(after + 80L * text.length());
             return;
         }
-        Locale l = voice != null ? voice : lc.getResources().getConfiguration().getLocales().get(0);
-        if (tts.setLanguage(l) < TextToSpeech.LANG_AVAILABLE) {
-            tts.setLanguage(Locale.getDefault());
-        }
-        tts.setSpeechRate(new Config(getContext()).speechRate);
-        utterance = "u" + SystemClock.elapsedRealtime();
+        final Locale l = lang != null ? lang : lc.getResources().getConfiguration().getLocales().get(0);
+        final float rate = new Config(getContext()).speechRate;
+        final String id = "u" + SystemClock.elapsedRealtime();
+        utterance = id;
         afterSpeech = after;
-        tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, utterance);
+        speech.execute(new Runnable() {
+            @Override
+            public void run() {
+                if (tts.setLanguage(l) < TextToSpeech.LANG_AVAILABLE) {
+                    tts.setLanguage(Locale.getDefault());
+                }
+                tts.setSpeechRate(rate);
+                tts.speak(text, TextToSpeech.QUEUE_FLUSH, null, id);
+            }
+        });
         // In case the TTS never reports the end.
         hideLater(after + 20000 + 100L * text.length());
     }

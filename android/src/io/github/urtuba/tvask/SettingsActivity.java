@@ -157,7 +157,7 @@ public class SettingsActivity extends Activity {
 
     @Override
     protected void onDestroy() {
-        tts.shutdown();
+        AssistSession.shutdown(tts);
         super.onDestroy();
     }
 
